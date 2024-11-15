@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quizhoot/pages/homePage.dart';
+import '../services/auth_services.dart';
 
 class NotificationsLoginPage extends StatefulWidget {
   const NotificationsLoginPage({super.key});
@@ -11,7 +12,31 @@ class NotificationsLoginPage extends StatefulWidget {
 class _NotificationsLoginPageState extends State<NotificationsLoginPage> {
   int?
       selectedSessions; // Variable to store the selected number of sessions per week
+  AuthService _authService = AuthService();
 
+  void _setMindfulness() async{
+    try {
+      final response = await _authService.setMindfulness(selectedSessions);
+      if (response.statusCode == 200) {
+        print('Selected sessions per week: $selectedSessions');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+              const HomePage()), // Navigate to HomePage
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to set mindfulness 31 : ${response.statusCode}')),
+        );
+        return;
+      }
+    }catch(e){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Fail : $e')),
+      );
+    }
+  }
   @override
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height; // Get screen height
@@ -128,13 +153,8 @@ class _NotificationsLoginPageState extends State<NotificationsLoginPage> {
               onPressed: selectedSessions != null
                   ? () {
                       // When selectedSessions is not null, proceed with submission
-                      print('Selected sessions per week: $selectedSessions');
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const HomePage()), // Navigate to HomePage
-                      );
+                    _setMindfulness();
+
                     }
                   : null, // Disable button if no selection is made
               style: ElevatedButton.styleFrom(
