@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:quizhoot/pages/homePage.dart';
 import 'package:quizhoot/pages/notificationsLogin.dart';
 import 'package:sign_in_button/sign_in_button.dart';
 // Import the signup page
