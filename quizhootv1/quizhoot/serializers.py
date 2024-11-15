@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
                 extra_kwargs: Alanlar için ek argümanlar belirtir.
         """ 
         model = User
-        fields = ["id","email","password","username"]
+        fields = ["id","email","password","username","first_name", "last_name", "phone_number","mindfulness"]
 
 class SetSerializer(serializers.ModelSerializer):
     class Meta:

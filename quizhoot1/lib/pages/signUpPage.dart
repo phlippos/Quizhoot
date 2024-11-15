@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:quizhoot/pages/notificationsLogin.dart'; // Import the next page after sign up
+import 'package:quizhoot/pages/loginPage.dart'; // Import the next page after sign up
 import 'package:sign_in_button/sign_in_button.dart'; // Import the Google sign-in button
+import '../services/auth_services.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -10,8 +11,69 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final AuthService _authService = AuthService();
+
+  // Controllers for the text fields
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneNumberController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
   bool _isChecked = false; // To manage the checkbox (Privacy Policy acceptance)
   bool _obscureText = true; // To manage the visibility of the password field
+
+  void _register() async {
+    // Simple validation check
+    if (_firstNameController.text.isEmpty ||
+        _lastNameController.text.isEmpty ||
+        _usernameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _phoneNumberController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All fields are required')),
+      );
+      return;
+    }
+
+    if (!_isChecked) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('You must accept the Privacy Policy and Terms of Use')),
+      );
+      return;
+    }
+
+    try {
+      final response = await _authService.register(
+        _firstNameController.text,
+        _lastNameController.text,
+        _usernameController.text,
+        _emailController.text,
+        _phoneNumberController.text,
+        _passwordController.text
+      );
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration successful')),
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const LoginPage(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration failed: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Registration failed: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,14 +83,11 @@ class _SignUpPageState extends State<SignUpPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF3A1078), // Set background color
       body: Padding(
-        padding: EdgeInsets.symmetric(
-            horizontal:
-                width * 0.05), // Horizontal padding based on screen width
+        padding: EdgeInsets.symmetric(horizontal: width * 0.05), // Horizontal padding based on screen width
         child: SingleChildScrollView(
           // Enable vertical scrolling
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start, // Align elements to the start
+            crossAxisAlignment: CrossAxisAlignment.start, // Align elements to the start
             children: [
               SizedBox(height: height * 0.05), // Space at the top
 
@@ -55,26 +114,26 @@ class _SignUpPageState extends State<SignUpPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: _buildTextField('First Name', 'First Name'),
+                    child: _buildTextField(_firstNameController, 'First Name', 'First Name'),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: _buildTextField('Last Name', 'Last Name'),
+                    child: _buildTextField(_lastNameController, 'Last Name', 'Last Name'),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
 
               // Username input
-              _buildTextField('Username', 'Username'),
+              _buildTextField(_usernameController, 'Username', 'Username'),
               const SizedBox(height: 16),
 
               // Email input
-              _buildTextField('Email', 'Email'),
+              _buildTextField(_emailController, 'Email', 'Email'),
               const SizedBox(height: 16),
 
               // Phone Number input
-              _buildTextField('Phone Number', 'Phone Number'),
+              _buildTextField(_phoneNumberController, 'Phone Number', 'Phone Number'),
               const SizedBox(height: 16),
 
               // Password input
@@ -105,14 +164,7 @@ class _SignUpPageState extends State<SignUpPage> {
               SizedBox(
                 width: double.infinity, // Full width button
                 child: ElevatedButton(
-                  onPressed: () {
-                    // On button press, navigate to NotificationsLoginPage
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsLoginPage(),
-                      ),
-                    );
-                  },
+                  onPressed: _register,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: Colors.black,
@@ -129,16 +181,14 @@ class _SignUpPageState extends State<SignUpPage> {
               // Google sign-in button
               Center(
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width *
-                      1, // Full width button
+                  width: MediaQuery.of(context).size.width * 1, // Full width button
                   height: 44, // Set height
                   child: SignInButton(
                     Buttons.google,
                     text: "Sign up with Google",
                     onPressed: () {},
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.circular(8.0), // Rounded corners
+                      borderRadius: BorderRadius.circular(8.0), // Rounded corners
                     ),
                   ),
                 ),
@@ -151,8 +201,9 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   // Helper function to build text input fields
-  Widget _buildTextField(String label, String hint) {
+  Widget _buildTextField(TextEditingController controller, String label, String hint) {
     return TextField(
+      controller: controller,
       decoration: InputDecoration(
         hintText: hint, // Hint text to guide the user
         hintStyle: const TextStyle(color: Colors.grey),
@@ -172,6 +223,7 @@ class _SignUpPageState extends State<SignUpPage> {
   // Helper function to build password input field
   Widget _buildPasswordField() {
     return TextField(
+      controller: _passwordController,
       obscureText: _obscureText, // Hide the password by default
       decoration: InputDecoration(
         hintText: 'Password', // Hint text for password
@@ -186,9 +238,7 @@ class _SignUpPageState extends State<SignUpPage> {
         fillColor: Colors.white,
         suffixIcon: IconButton(
           icon: Icon(
-            _obscureText
-                ? Icons.visibility_off
-                : Icons.visibility, // Toggle icon based on password visibility
+            _obscureText ? Icons.visibility_off : Icons.visibility, // Toggle icon based on password visibility
             color: Colors.black,
           ),
           onPressed: () {

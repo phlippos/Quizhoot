@@ -1,21 +1,15 @@
 from django.db import models
-
+from django.contrib.auth.models import AbstractUser
 """
 Django'da models.py, veritabanı tablosunu temsil eden Python sınıflarının bulunduğu yerdir.
 Bu sınıflar, Django ORM (Object-Relational Mapping) kullanarak veritabanında verileri depolamak ve almak için kullanılır.
 
 """
 # Create your models here.
-class User(models.Model):
-    email = models.CharField(max_length=255,db_column="email")
-    password = models.CharField(max_length=16,db_column="password")
-    username = models.CharField(max_length=255,db_column="username")
+class User(AbstractUser):
+    phone_number = models.CharField(max_length=255,db_column="phone_number")
+    mindfulness = models.IntegerField(null=True, db_column="mindfulness",default=1)
     
-    class Meta:
-        db_table = "User"
-    
-    def __str__(self):
-        return f" -  {self.email}  -  {self.password}  -  {self.username}"
     
 class Set(models.Model):
     set_name = models.CharField(max_length=255, db_column="set_name", null=False)

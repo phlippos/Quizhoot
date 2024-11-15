@@ -6,10 +6,11 @@ from django.db import connection
 from rest_framework import status
 from .models import User,Set
 from .serializers import UserSerializer,SetSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.authentication import TokenAuthentication
-
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate
 """
 Django'da views.py dosyası, gelen HTTP isteklerini işleyen ve bir yanıt döndüren işlevlerin (view) bulunduğu yerdir.
 View fonksiyonları, kullanıcı tarafından yapılan istekleri (GET, POST, vb.) alır,
@@ -25,6 +26,7 @@ veritabanı sorguları yapar, şablonlar (templates) kullanarak HTML yanıtları
 """
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()  #queryset, viewset'in hangi verileri kullanacağını belirleyen Django QuerySet nesnesidir. queryset, veritabanından çekilecek olan verileri tanımlar.
+    
     """
     QuerySet Özellikleri:
         Item.objects.all(): Tüm Item nesnelerini seçer.
@@ -33,18 +35,18 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UserSerializer #serializer_class, bu viewset'in hangi serializer sınıfını kullanacağını belirler. Serializer, veritabanı modellerinin nasıl JSON veya başka formatlara dönüştürüleceğini ve tersini tanımlar.
     authentication_classes = [TokenAuthentication]
+    
    #filter_backends Hangi filtreleme arka uçlarının kullanılacağını belirler. Bu, queryset'i belirli kriterlere göre filtrelemeyi sağlar.
    # filter_backends = [filters.SearchFilter]
    #search_fields = ['name', 'description']Burada, SearchFilter kullanılarak name ve description alanlarına göre arama yapılabilmesi sağlanır
     
     def create_user(self,request):
-        
         serializer =  self.get_serializer(data = request.data)
         if serializer.is_valid():
             user = serializer.save() ##database e kaydet userı
             return Response(serializer.data, status = status.HTTP_201_CREATED)
         return Response(serializer.data, status = status.HTTP_400_BAD_REQUEST)
-    
+         
     def list_user(self,request):
         users = self.get_queryset()
         serializer = self.get_serializer(users,many = True)
@@ -53,24 +55,42 @@ class UserViewSet(viewsets.ModelViewSet):
     def user_login(self,request):
         username = request.data.get("username")
         password = request.data.get("password")
-        
+             
         if not username or not password : 
             return Response({"error":"username or password cannot be null"},status = status.HTTP_400_BAD_REQUEST)
         
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT id,password FROM user WHERE username = %s",[username])
-            row = cursor.fetchone()
-        user_id, password_ = row
+        user = User.objects.get(username = username)
+        if user and user.password == password:
+            token, created = Token.objects.get_or_create(user=user)
+            print(token.key)
+            return Response({'access_token': token.key},status = 200)
+        return Response({'error': 'Invalid credentials'}, status=400)
+    
+    
+class UserProfileViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+    
+    def set_mindfulness(self,request):
+        print(request.user.email)
+        try:
+            user = User.objects.get(username = request.user.username)
+            mindfulness =  request.data.get("mindfulness")
+            user.mindfulness = mindfulness
+            
+            user.save();
+                          
+            return Response({"statsus": "success", "message" : "updated"},status = status.HTTP_200_OK)
         
-        if  password == password_:
-            user = User.objects.get(id = user_id)
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }, status=status.HTTP_200_OK)
-        else : 
-            return Response({"error" : "password is invalid" },status= status.HTTP_401_UNAUTHORIZED)
+        except User.DoesNotExist:
+        # Handle case where user does not exist
+            return Response({"status": "error", "message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            # Catch any other exceptions
+            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    
     
         
 class SetViewSet(viewsets.ModelViewSet):

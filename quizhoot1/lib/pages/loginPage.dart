@@ -1,11 +1,49 @@
 import 'package:flutter/material.dart';
+import 'package:quizhoot/pages/homePage.dart';
 import 'package:quizhoot/pages/notificationsLogin.dart';
 import 'package:sign_in_button/sign_in_button.dart';
 // Import the signup page
 import 'signUpPage.dart'; // Import the signup page
+import '../services/auth_services.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage>{
+  final AuthService _authService = AuthService();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  void _login() async{
+    if(_usernameController.text.isEmpty ||
+        _passwordController.text.isEmpty){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All fields are required')),
+      );
+      return;
+    }
+
+      final response = await _authService.login(
+          _usernameController.text,
+          _passwordController.text
+      );
+      if (response.statusCode == 200){
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) =>
+            const NotificationsLoginPage(), // Navigate to NotificationsLoginPage
+          ),
+        );
+      }else{
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${response.body}')),
+        );
+      }
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +82,10 @@ class LoginPage extends StatelessWidget {
                 child: Column(
                   children: [
                     // Email input field
-                    const TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Email Address',
+                    TextField(
+                      controller : _usernameController,
+                      decoration: const InputDecoration(
+                        hintText: 'Username',
                         hintStyle: TextStyle(color: Colors.grey),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(color: Colors.white),
@@ -57,11 +96,12 @@ class LoginPage extends StatelessWidget {
                         filled: true,
                         fillColor: Colors.white,
                       ),
-                      style: TextStyle(color: Colors.black),
+                      style: const TextStyle(color: Colors.black),
                     ),
                     const SizedBox(height: 16),
                     // Password input field
                     TextField(
+                      controller : _passwordController,
                       obscureText: true, // Hide password text
                       decoration: InputDecoration(
                         hintText: 'Password',
@@ -103,15 +143,7 @@ class LoginPage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity, // Full-width button
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Navigate to HomePage on login
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const NotificationsLoginPage(), // Navigate to NotificationsLoginPage
-                            ),
-                          );
-                        },
+                        onPressed: _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
@@ -155,6 +187,7 @@ class LoginPage extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
+
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) =>
