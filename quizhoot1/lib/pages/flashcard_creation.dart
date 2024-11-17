@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'set_view.dart'; // Import the necessary page for navigation
+import '../services/set_service.dart';
+import 'homePage.dart';
 
 class CreateFlashcardPage extends StatefulWidget {
   const CreateFlashcardPage({super.key});
@@ -10,6 +12,43 @@ class CreateFlashcardPage extends StatefulWidget {
 
 class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
   // A list to store flashcards with term and definition
+  SetService _setService = SetService();
+
+  final TextEditingController _setNameController = TextEditingController();
+
+  void _createSet() async {
+    if (_setNameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('All fields are required')),
+      );
+      return;
+    }
+    try {
+      final response = await _setService.createSet(_setNameController.text);
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Set created')),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+            const FlashcardViewPage(), // Navigate to FlashcardViewPage
+          ),
+        );
+      }
+      else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('set creation failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('set creation failed $e')),
+      );
+    }
+  }
+
   List<Map<String, String>> flashcards = [
     {'term': '', 'definition': ''} // Initial empty flashcard
   ];
@@ -43,15 +82,7 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
           IconButton(
             icon: const Icon(Icons.playlist_add_check),
             color: Colors.green,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const FlashcardViewPage(), // Navigate to FlashcardViewPage
-                ),
-              );
-            },
+            onPressed: _createSet,
           ),
         ],
       ),
@@ -69,8 +100,9 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                     .grey[200], // Light grey background for the input field
                 borderRadius: BorderRadius.circular(8.0), // Rounded corners
               ),
-              child: const TextField(
-                decoration: InputDecoration(
+              child: TextField(
+                controller: _setNameController,
+                decoration: const InputDecoration(
                   border: InputBorder.none, // No border
                   hintText: 'Enter a title', // Placeholder text
                 ),
