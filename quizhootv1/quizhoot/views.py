@@ -62,7 +62,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = User.objects.get(username = username)
         if user and user.password == password:
             token, created = Token.objects.get_or_create(user=user)
-            print(token.key)
+            
             return Response({'access_token': token.key},status = 200)
         return Response({'error': 'Invalid credentials'}, status=400)
     
@@ -90,31 +90,32 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             # Catch any other exceptions
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
-    
-    
         
 class SetViewSet(viewsets.ModelViewSet):
     """
     ViewSet for handling CRUD operations for the Set model.
     """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = SetSerializer
     @action(detail=False, methods=['get'], url_path='list')
     def list_sets(self, request):
-        user_id = request.query_params.get('user_id')
+        user = User.objects.get(username = request.user.username)
+        user_id = user.id
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
         sets = Set.objects.filter(user_id=user_id)
         serializer = SetSerializer(sets, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='add')
     def add_set(self, request):
-        user_id = request.data.get('user_id')
+        user = User.objects.get(username = request.user.username)
+        user_id = user.id
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = SetSerializer(data=request.data)
+        serializer = SetSerializer(data={'user_id':user_id,'set_name':request.data['set_name']})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
