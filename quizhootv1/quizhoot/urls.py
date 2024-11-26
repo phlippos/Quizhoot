@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet,SetViewSet,UserProfileViewSet
+from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -7,18 +7,34 @@ from rest_framework_simplejwt.views import (
 )
 
 urlpatterns = [
-    path('users/list', UserViewSet.as_view({"get":"list_user"}),name="user-list"),
-    path('users/create', UserViewSet.as_view({"post":"create_user"}),name="user-create"),
-    path('update-mindfulness/',UserProfileViewSet.as_view({"post":"set_mindfulness"}),name="set-mindfulness"),
-    path('login/',UserViewSet.as_view({"post":"user_login"}),name="user-login"),
+    # User routes
+    path('users/list/', UserViewSet.as_view({"get": "list_user"}), name="user-list"),
+    path('users/create/', UserViewSet.as_view({"post": "create_user"}), name="user-create"),
+    path('login/', UserViewSet.as_view({"post": "user_login"}), name="user-login"),
+    path('update-mindfulness/', UserProfileViewSet.as_view({"post": "set_mindfulness"}), name="set-mindfulness"),
+
+    # JWT Token routes
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # Set routes
     path('sets/list/', SetViewSet.as_view({'get': 'list_sets'}), name='list_sets'),
     path('sets/add/', SetViewSet.as_view({'post': 'add_set'}), name='add_set'),
-    path('sets/delete/<int:ID>/', SetViewSet.as_view({'delete': 'delete_set'}), name='delete_set'),  # Use ID here
-    path('sets/update/<int:ID>/', SetViewSet.as_view({'put': 'update_set'}), name='update_set')    # Use ID here
-]
+    path('sets/delete/<int:pk>/', SetViewSet.as_view({'delete': 'delete_set'}), name='delete_set'),
+    path('sets/update/<int:pk>/', SetViewSet.as_view({'put': 'update_set'}), name='update_set'),
 
+    # Flashcard routes
+    path('flashcards/list/', FlashcardViewSet.as_view({'get': 'list_flashcards'}), name='list_flashcards'),
+    path('flashcards/add/', FlashcardViewSet.as_view({'post': 'add_flashcard'}), name='add_flashcard'),
+    path('flashcards/delete/<int:pk>/', FlashcardViewSet.as_view({'delete': 'delete_flashcard'}), name='delete_flashcard'),
+    path('flashcards/update/<int:pk>/', FlashcardViewSet.as_view({'put': 'update_flashcard'}), name='update_flashcard'),
+
+    # Set_Flashcard routes
+    path('set_flashcards/list/<int:set_id>/', Set_FlashcardViewSet.as_view({'get': 'list_set_flashcards'}), name='list_set_flashcards'),
+    path('set_flashcards/add/', Set_FlashcardViewSet.as_view({'post': 'add_set_flashcard'}), name='add_set_flashcard'),
+    path('set_flashcards/delete/<int:flashcard_id>/', Set_FlashcardViewSet.as_view({'delete': 'delete_set_flashcard'}), name='delete_set_flashcard'),
+    path('set_flashcards/update/<int:flashcard_id>/', Set_FlashcardViewSet.as_view({'put': 'update_set_flashcard'}), name='update_set_flashcard'),
+]
 
 """
 Bu yapılandırma, aşağıdaki URL'leri otomatik olarak oluşturur:

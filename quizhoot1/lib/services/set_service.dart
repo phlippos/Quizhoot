@@ -6,14 +6,15 @@ class SetService{
   final AuthService _authService = AuthService();
   final String baseurl = 'http://10.0.2.2:8000/api';
 
-  Future<http.Response> createSet(String setName) async {
+  Future<http.Response> createSet(String setName,int size) async {
     String? token = await _authService.getToken();
     final response = await http.post(
       Uri.parse('${baseurl}/sets/add/'),
       headers: {'Content-Type': 'application/json',
                 'Authorization' : 'Token $token'},
       body: jsonEncode({
-        'set_name' : setName
+        'set_name' : setName,
+        'size' : size
       }),
     );
 

@@ -26,3 +26,15 @@ class Set(models.Model):
 
     def __str__(self):
         return f"{self.set_name} (User ID: {self.user_id.id})"
+
+class Flashcard(models.Model):
+    term = models.CharField(max_length=255,db_column="term",null=False)
+    definition = models.CharField(max_length=255,db_column="definition",null=False)
+    fav = models.BooleanField(db_column="fav_word",default=False)
+
+    class Meta:
+        db_table = "Flashcard"
+
+class Set_Flashcard(models.Model):
+    set_id = models.ForeignKey(Set,on_delete=models.CASCADE,db_column="set_id")
+    flashcard_id = models.ForeignKey(Flashcard,on_delete=models.CASCADE,db_column="flashcard_id")
