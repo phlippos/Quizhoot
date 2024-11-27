@@ -34,11 +34,17 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id","email","password","username","first_name", "last_name", "phone_number","mindfulness"]
 
 class SetSerializer(serializers.ModelSerializer):
+    createdBy = serializers.SerializerMethodField()
+
     class Meta:
         model = Set
-        fields = '__all__'
-        
+        fields = '__all__'  
+
+    def get_createdBy(self, obj):     
+        return obj.user_id.username if obj.user_id else None
+    
 class FlashcardSerializer(serializers.ModelSerializer):
+    fav = serializers.BooleanField(source='fav_word', read_only=True)
     class Meta:
         model = Flashcard
         fields = '__all__'

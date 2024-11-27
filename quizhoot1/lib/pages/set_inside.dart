@@ -2,23 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'quiz_view.dart';
+import '../services/set_flashcard_service.dart';
 
 class SetInside extends StatefulWidget {
-  const SetInside({super.key});
+  final int? setID; // Set ID can be nullable for the default constructor
+
+  // Default constructor (no parameters)
+  const SetInside({super.key}) : setID = null;
+
+  const SetInside.withSetID({
+    super.key,
+    required this.setID
+  });
 
   @override
   _SetInsideState createState() => _SetInsideState();
 }
 
 class _SetInsideState extends State<SetInside> {
+
+  Set_FlashcardService _set_flashcardService = Set_FlashcardService();
+
   // List of flashcards with terms and their definitions
-  final List<Map<String, String>> flashcards = [
-    {'term': 'Apple', 'definition': 'Apfel'},
-    {'term': 'Apricot', 'definition': 'Aprikose'},
-    {'term': 'Cherry', 'definition': 'Kirsche'},
-    {'term': 'Melon', 'definition': 'Melone'},
-    {'term': 'Pear', 'definition': 'Birne'},
-  ];
+  List<Map<String, dynamic>> flashcards = [];
 
   final FlutterTts _flutterTts =
       FlutterTts(); // Flutter TTS (Text-to-Speech) instance
@@ -27,6 +33,50 @@ class _SetInsideState extends State<SetInside> {
   List<bool> selectedSets =
       List.filled(3, false); // List to track selected sets
   bool showSetOptions = false; // Boolean to toggle visibility of set options
+
+  @override
+  void initState(){
+    super.initState();
+    _fetchFlashcards();
+  }
+
+  Future<void> _fetchFlashcards() async{
+    try{
+      await _set_flashcardService.fetchData(widget.setID!);
+      List<Map<String, dynamic>> fetchedFlashcards = _set_flashcardService.data;
+      setState(() {
+        flashcards = fetchedFlashcards;
+      });
+    }catch (e) {
+      print('Error fetching sets: $e');
+    }
+  }
+
+  void _updateFavStatus(int flashcardID,bool fav) async{
+    try {
+      final response = await _set_flashcardService.updateFavStatus(
+          flashcardID, fav);
+      if(response.statusCode == 200){
+        if(fav) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('added fav list')),
+          );
+        }else{
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('removed from fav list')),
+          );
+        }
+      }else{
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('fav operation failed')),
+        );
+      }
+    }catch(e){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('fav creation failed $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,22 +170,17 @@ class _SetInsideState extends State<SetInside> {
             right: 10,
             child: IconButton(
               icon: Icon(
-                favorites[index] ? Icons.favorite : Icons.favorite_border,
-                color: favorites[index] ? Colors.red : Colors.grey,
+                flashcards[index]['fav'] ? Icons.favorite : Icons.favorite_border,
+                color: flashcards[index]['fav'] ? Colors.red : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
-                  favorites[index] =
-                      !favorites[index]; // Toggle the favorite status
+                  flashcards[index]['fav'] =
+                      !flashcards[index]['fav']; // Toggle the favorite status
+
                 });
-                final snackBar = SnackBar(
-                  content: Text(favorites[index]
-                      ? 'Added to favorites'
-                      : 'Removed from favorites'), // Show feedback message
-                  duration: const Duration(seconds: 1),
-                );
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(snackBar); // Display the snackbar message
+
+                _updateFavStatus(flashcards[index]['id'],flashcards[index]['fav']);
               },
             ),
           ),
