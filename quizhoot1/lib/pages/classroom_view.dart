@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'classroom_inside.dart'; // This file is added to navigate to the class details page
+import "clasroom_creation.dart";
 
 // Main page for the classroom view
 class ClassroomViewPage extends StatelessWidget {
@@ -26,8 +27,39 @@ class ClassroomViewPage extends StatelessWidget {
 }
 
 // The content that will be displayed in the body of the ClassroomViewPage
-class ClassroomContent extends StatelessWidget {
+class ClassroomContent extends StatefulWidget {
   const ClassroomContent({super.key});
+
+  @override
+  _ClassroomContentState createState() => _ClassroomContentState();
+}
+
+class _ClassroomContentState extends State<ClassroomContent> {
+  // List of classrooms
+  final List<Map<String, String>> classrooms = [
+    {
+      'className': 'Class 1',
+      'studentCount': '10 Students',
+      'teacherName': 'Teacher A'
+    },
+    {
+      'className': 'Class 2',
+      'studentCount': '15 Students',
+      'teacherName': 'Teacher B'
+    },
+    {
+      'className': 'Class 3',
+      'studentCount': '20 Students',
+      'teacherName': 'Teacher C'
+    },
+  ];
+
+  // Method to delete a classroom
+  void _deleteClassroom(int index) {
+    setState(() {
+      classrooms.removeAt(index); // Remove the classroom at the specified index
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,45 +67,29 @@ class ClassroomContent extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Each ClassroomCard widget displays a class with details
-          ClassroomCard(
-            className: 'Class 1',
-            studentCount: '10 Students',
-            teacherName: 'Teacher A',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ClassroomInside()),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          ClassroomCard(
-            className: 'Class 2',
-            studentCount: '15 Students',
-            teacherName: 'Teacher B',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ClassroomInside()),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          ClassroomCard(
-            className: 'Class 3',
-            studentCount: '20 Students',
-            teacherName: 'Teacher C',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const ClassroomInside()),
-              );
-            },
-          ),
+          for (int i = 0; i < classrooms.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: ClassroomCard(
+                className: classrooms[i]['className']!,
+                studentCount: classrooms[i]['studentCount']!,
+                teacherName: classrooms[i]['teacherName']!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ClassroomInside(),
+                    ),
+                  );
+                },
+                onDelete: () => _deleteClassroom(i), // Pass delete callback
+              ),
+            ),
+          if (classrooms.isEmpty)
+            const Text(
+              'No classrooms available.',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
         ],
       ),
     );
@@ -86,6 +102,7 @@ class ClassroomCard extends StatelessWidget {
   final String studentCount;
   final String teacherName;
   final VoidCallback onTap;
+  final VoidCallback onDelete; // New callback for deleting a classroom
 
   const ClassroomCard({
     super.key,
@@ -93,6 +110,7 @@ class ClassroomCard extends StatelessWidget {
     required this.studentCount,
     required this.teacherName,
     required this.onTap,
+    required this.onDelete,
   });
 
   @override
@@ -122,10 +140,28 @@ class ClassroomCard extends StatelessWidget {
               children: [
                 const Icon(Icons.groups, size: 40), // Icon for groups
                 const SizedBox(width: 10),
-                Text(
-                  className, // Display the class name here
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    className, // Display the class name here
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                // Edit button - navigate to classroom creation page
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateClassroomPage(),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
+                  onPressed: onDelete, // Call delete function
                 ),
               ],
             ),

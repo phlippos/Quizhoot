@@ -13,88 +13,16 @@ class CreateFlashcardPage extends StatefulWidget {
 }
 
 class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
-
-  List<int> nullTermOrDefinitionIndices = [];
-  List<int> duplicateIndices = [];
+  List<Map<String, String>> flashcards = [
+    {'term': '', 'definition': ''} // Initial empty flashcard
+  ];
+  String setTitle = ''; // Title of the flashcard set
 
   int setID = -1;
   SetService _setService = SetService();
   FlashcardService _flashcardService = FlashcardService();
   Set_FlashcardService _set_flashcardService = Set_FlashcardService();
   int cardNumber = 1; // Tracks the number of flashcards
-  final TextEditingController _setNameController = TextEditingController();
-
-  Future<void> _createSet() async {
-    if (_setNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('All fields are required')),
-      );
-      return;
-    }
-    try {
-      final response = await _setService.createSet(_setNameController.text,cardNumber);
-      if (response.statusCode == 201) {
-        final Map<String,dynamic> data = jsonDecode(response.body);
-        setID = data['id'];
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Set created ')),
-        );
-
-      }
-      else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('set creation failed')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('set creation failed $e')),
-      );
-    }
-  }
-
-  Future<void> _createRelationSet_Flashcard(int setID,int flashcardID) async {
-    try{
-      final response = await _set_flashcardService.createRelationSet_Flashcard(setID, flashcardID);
-      if(response.statusCode == 201){
-        return;
-      }
-    }catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
-      );
-    }
-  }
-
-  Future<void> _createFlashcard(Map<String,String>? wordPair) async{
-    if( wordPair != null && (wordPair['term']!.isEmpty || wordPair['definition']!.isEmpty)){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('fields are required')),
-      );
-      return;
-    }
-    try{
-      final response = await _flashcardService.createFlashcard(wordPair?['term'],wordPair?['definition']);
-      if(response.statusCode == 201){
-        final Map<String,dynamic> data = jsonDecode(response.body);
-        await _createRelationSet_Flashcard(setID, data['id']);
-      }else{
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('flashcard creation failed')),
-        );
-        return;
-      }
-    }catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('flashcard creation failed $e')),
-      );
-    }
-  }
-
-  List<Map<String, String>> flashcards = [
-    {'term': '', 'definition': ''} // Initial empty flashcard
-  ];
-
 
   // Function to add a new flashcard
   void addFlashcard() {
@@ -104,132 +32,246 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
     });
   }
 
+  // Function to delete a flashcard
+  void deleteFlashcard(int index) {
+    setState(() {
+      flashcards.removeAt(index);
+    });
+  }
+
+  // Function to check for duplicate terms
+  bool hasDuplicateTerms() {
+    Set<String> terms = {};
+    for (var card in flashcards) {
+      if (terms.contains(card['term'])) {
+        return true; // Duplicate found
+      }
+      if (card['term'] != null && card['term']!.isNotEmpty) {
+        terms.add(card['term']!);
+      }
+    }
+    return false;
+  }
+
+  // Function to validate and save the flashcard set
+  Future<void> _createSet() async {
+    if (setTitle.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a title for the set.')),
+      );
+      return;
+    }
+
+    try {
+      final response = await _setService.createSet(setTitle, cardNumber);
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        setID = data['id'];
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Flashcard set created successfully!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Set creation failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Set creation failed $e')),
+      );
+    }
+  }
+
+  Future<void> _createFlashcard(Map<String, String>? wordPair) async {
+    if (wordPair != null &&
+        (wordPair['term']!.isEmpty || wordPair['definition']!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('All fields are required')),
+      );
+      return;
+    }
+    try {
+      final response = await _flashcardService.createFlashcard(
+          wordPair?['term'], wordPair?['definition']);
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        await _createRelationSet_Flashcard(setID, data['id']);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Flashcard creation failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Flashcard creation failed $e')),
+      );
+    }
+  }
+
+  Future<void> _createRelationSet_Flashcard(int setID, int flashcardID) async {
+    try {
+      final response = await _set_flashcardService.createRelationSet_Flashcard(
+          setID, flashcardID);
+      if (response.statusCode == 201) {
+        return;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e')),
+      );
+    }
+  }
+
+  // Function to save the flashcard set
+  void saveSet() async {
+    if (setTitle.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a title for the set.')),
+      );
+      return;
+    }
+
+    for (var card in flashcards) {
+      if (card['term']!.isEmpty || card['definition']!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('All cards must have both term and definition.')),
+        );
+        return;
+      }
+    }
+
+    if (hasDuplicateTerms()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Duplicate terms are not allowed.')),
+      );
+      return;
+    }
+
+    await _createSet();
+
+    for (Map<String, String> wordPair in flashcards) {
+      await _createFlashcard(wordPair);
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Flashcard set saved successfully!')),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+          builder: (context) =>
+              const FlashcardViewPage()), // Navigate to FlashcardViewPage
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context)
-        .size
-        .width; // Get the screen width for responsive layout
+    double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3A1078), // Set background color
+      backgroundColor: const Color(0xFF3A1078),
       appBar: AppBar(
-        backgroundColor:
-            const Color(0xFF3A1078), // Match the app bar color with background
+        backgroundColor: const Color(0xFF3A1078),
         title: const Text(
-          'Create Flashcard', // Title of the page
-          style: TextStyle(color: Colors.black), // Text color in the app bar
+          'Create Flashcard',
+          style: TextStyle(color: Colors.black),
         ),
         actions: [
-          // Button to navigate to Flashcard view
           IconButton(
-            icon: const Icon(Icons.playlist_add_check),
+            icon: const Icon(Icons.save),
             color: Colors.green,
-            onPressed:() async {
-
-              if(_flashcardService.checkExistanceNullFlashcard(flashcards)) {
-                if (_flashcardService.checkDuplication(flashcards)) {
-                  await _createSet();
-
-                  for (Map<String, String> wordPair in flashcards) {
-                    await _createFlashcard(wordPair);
-                  }
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                      const FlashcardViewPage(), // Navigate to FlashcardViewPage
-                    ),
-                  );
-                }else{
-                  duplicateIndices = _flashcardService.getDuplicateIndices(flashcards);
-                }
-              }else{
-                nullTermOrDefinitionIndices = _flashcardService.getNullTermOrDefinitionIndices(flashcards);
-              }
-            },
+            onPressed: saveSet, // Save the set on button press
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0), // Padding for the body content
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Input field for entering a title for the flashcard set
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              width: width * 0.9, // 90% of the screen width
+              width: width * 0.9,
               decoration: BoxDecoration(
-                color: Colors
-                    .grey[200], // Light grey background for the input field
-                borderRadius: BorderRadius.circular(8.0), // Rounded corners
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8.0),
               ),
               child: TextField(
-                controller: _setNameController,
                 decoration: const InputDecoration(
-                  border: InputBorder.none, // No border
-                  hintText: 'Enter a title', // Placeholder text
+                  border: InputBorder.none,
+                  hintText: 'Enter a title',
                 ),
+                onChanged: (value) => setTitle = value,
               ),
             ),
-            const SizedBox(
-                height: 20), // Space between title input and flashcard list
+            const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: flashcards.length, // Number of flashcards to display
+                itemCount: flashcards.length,
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10.0),
                     child: Container(
                       padding: const EdgeInsets.all(16.0),
-                      width: width *
-                          0.9, // 90% of the screen width for each flashcard container
+                      width: width * 0.9,
                       decoration: BoxDecoration(
-                        color: Colors
-                            .grey[200], // Light grey background for flashcards
-                        borderRadius: BorderRadius.circular(
-                            8.0), // Rounded corners for flashcards
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.0),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8.0,
+                            offset: Offset(2, 4), // Shadow position
+                          ),
+                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Stack(
                         children: [
-                          // Display the card number
-                          Text(
-                            'Card ${index + 1}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Card ${index + 1}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  labelText: 'Enter term',
+                                ),
+                                onChanged: (value) {
+                                  flashcards[index]['term'] = value;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  labelText: 'Enter definition',
+                                ),
+                                onChanged: (value) {
+                                  flashcards[index]['definition'] = value;
+                                },
+                              ),
+                            ],
                           ),
-                          const SizedBox(
-                              height:
-                                  10), // Space between title and input fields
-                          // Text field for entering the term
-                          TextField(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText:
-                                  'Enter term', // Label for the term input field
+                          Positioned(
+                            top: -10,
+                            right: -10,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Color(0xFF3A1078),
+                                size: 28,
+                              ),
+                              onPressed: () => deleteFlashcard(index),
                             ),
-                            onChanged: (value) {
-                              flashcards[index]['term'] =
-                                  value; // Update the term when changed
-                            },
-                          ),
-                          const SizedBox(
-                              height:
-                                  10), // Space between term input and definition input
-                          // Text field for entering the definition
-                          TextField(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText:
-                                  'Enter definition', // Label for the definition input field
-                            ),
-                            onChanged: (value) {
-                              flashcards[index]['definition'] =
-                                  value; // Update the definition when changed
-                            },
                           ),
                         ],
                       ),
@@ -241,13 +283,10 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
           ],
         ),
       ),
-      // Floating action button to add new flashcards
       floatingActionButton: FloatingActionButton(
-        onPressed: addFlashcard, // Call addFlashcard function on press
-        backgroundColor: const Color.fromARGB(
-            255, 150, 100, 255), // Custom background color for the button
-        child: const Icon(
-            Icons.add), // Plus icon to represent adding a new flashcard
+        onPressed: addFlashcard,
+        backgroundColor: const Color.fromARGB(255, 150, 100, 255),
+        child: const Icon(Icons.add),
       ),
     );
   }
