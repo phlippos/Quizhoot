@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'set_inside.dart'; // Bu dosyayı ekleyin
+import '../services/set_service.dart';
 
 class FlashcardViewPage extends StatelessWidget {
   const FlashcardViewPage({super.key});
@@ -21,51 +22,77 @@ class FlashcardViewPage extends StatelessWidget {
   }
 }
 
-class SetContent extends StatelessWidget {
+class SetContent extends StatefulWidget {
   const SetContent({super.key});
+
+  @override
+  _SetContentState createState() => _SetContentState();
+}
+
+class _SetContentState extends State<SetContent> {
+  final SetService _setService = SetService();
+  List<Map<String, dynamic>> sets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSets();
+  }
+
+  Future<void> _fetchSets() async {
+    try {
+      await _setService.fetchData();
+      List<Map<String, dynamic>> fetchedSets = _setService.data;
+      setState(() {
+        sets = fetchedSets;
+      });
+    } catch (e) {
+      print('Error fetching sets: $e');
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
+      child: sets.isEmpty
+          ? Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SetCard(
-            setName: 'Set 1',
-            termCount: '5 Terms',
-            createdBy: 'Creator A',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SetInside()),
-              );
-            },
+          Text(
+            'You have not created any sets yet.',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 16),
-          SetCard(
-            setName: 'Set 2',
-            termCount: '8 Terms',
-            createdBy: 'Creator B',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SetInside()),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          SetCard(
-            setName: 'Set 3',
-            termCount: '12 Terms',
-            createdBy: 'Creator C',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SetInside()),
-              );
-            },
-          ),
+          CircularProgressIndicator(),
         ],
+      )
+          : Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: sets.map((set) {
+          return Column(
+            children: [
+              SetCard(
+                setName: set['set_name']!,
+                termCount: set['size']!.toString(),
+                createdBy: set['createdBy']!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SetInside.withSetID(setID: set['id']!),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
