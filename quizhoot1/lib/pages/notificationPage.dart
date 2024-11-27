@@ -1,8 +1,42 @@
 import 'package:flutter/material.dart';
 import 'custom_bottom_nav.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  // Bildirim listesini tutmak için bir liste
+  final List<Map<String, String>> notifications = [
+    {
+      'title': 'New Assignment Available',
+      'description': 'You have a new assignment in Classroom 1.',
+      'time': '10 minutes ago',
+    },
+    {
+      'title': 'Classroom Update',
+      'description': 'The schedule for Classroom 2 has been updated.',
+      'time': '2 hours ago',
+    },
+    {
+      'title': 'New Message from Teacher',
+      'description': 'You have received a new message from Teacher A.',
+      'time': '1 day ago',
+    },
+    {
+      'title': 'Upcoming Test Reminder',
+      'description': 'Don\'t forget the test in Classroom 3 tomorrow.',
+      'time': '2 days ago',
+    },
+    {
+      'title': 'New Message from Teacher',
+      'description': 'The due date for the assignment is tomorrow at 10 am',
+      'time': '3 days ago',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -10,46 +44,53 @@ class NotificationPage extends StatelessWidget {
       backgroundColor: const Color(0xFF3A1078),
       appBar: AppBar(
         backgroundColor: const Color(0xFF3A1078),
-        title: const Text(
-            'Notifications'), // App bar title for the Notifications page
+        title: const Text('Notifications'),
       ),
-      body: ListView(
+      body: ListView.builder(
         padding: const EdgeInsets.all(16),
-        children: const [
-          // Individual notification cards with title, description, and timestamp
-          NotificationCard(
-            title: 'New Assignment Available',
-            description: 'You have a new assignment in Classroom 1.',
-            time: '10 minutes ago',
-          ),
-          SizedBox(height: 10), // Space between notification cards
-          NotificationCard(
-            title: 'Classroom Update',
-            description: 'The schedule for Classroom 2 has been updated.',
-            time: '2 hours ago',
-          ),
-          SizedBox(height: 10),
-          NotificationCard(
-            title: 'New Message from Teacher',
-            description: 'You have received a new message from Teacher A.',
-            time: '1 day ago',
-          ),
-          SizedBox(height: 10),
-          NotificationCard(
-            title: 'Upcoming Test Reminder',
-            description: 'Don\'t forget the test in Classroom 3 tomorrow.',
-            time: '2 days ago',
-          ),
-          SizedBox(height: 10),
-          NotificationCard(
-            title: 'New Message from Teacher',
-            description: 'The due date for the assignment is tomorrow at 10 am',
-            time: '3 days ago',
-          ),
-        ],
+        itemCount: notifications.length,
+        itemBuilder: (context, index) {
+          final notification = notifications[index];
+          return Dismissible(
+            key: Key(notification['title']!),
+            direction: DismissDirection.horizontal,
+            onDismissed: (direction) {
+              // Eleman kaydırıldığında listeden silinir
+              setState(() {
+                notifications.removeAt(index);
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${notification['title']} dismissed'),
+                ),
+              );
+            },
+            background: Container(
+              color: Colors.red,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.only(left: 16),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            secondaryBackground: Container(
+              color: Colors.red,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 16),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            child: Column(
+              children: [
+                NotificationCard(
+                  title: notification['title']!,
+                  description: notification['description']!,
+                  time: notification['time']!,
+                ),
+                const SizedBox(height: 10),
+              ],
+            ),
+          );
+        },
       ),
-      bottomNavigationBar: const CustomBottomNav(
-          initialIndex: 1), // Custom bottom navigation bar with initial index
+      bottomNavigationBar: const CustomBottomNav(initialIndex: 1),
     );
   }
 }
@@ -70,9 +111,9 @@ class NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.white,
-      elevation: 4, // Shadow effect for the card
+      elevation: 4,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12), // Rounded corners for the card
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -83,20 +124,20 @@ class NotificationCard extends StatelessWidget {
               title,
               style: const TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.bold, // Bold title text
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 4), // Spacing between title and description
+            const SizedBox(height: 4),
             Text(
               description,
-              style: const TextStyle(fontSize: 14), // Description text
+              style: const TextStyle(fontSize: 14),
             ),
-            const SizedBox(height: 8), // Spacing between description and time
+            const SizedBox(height: 8),
             Text(
               time,
               style: const TextStyle(
                 fontSize: 12,
-                color: Colors.grey, // Timestamp text in grey
+                color: Colors.grey,
               ),
             ),
           ],
