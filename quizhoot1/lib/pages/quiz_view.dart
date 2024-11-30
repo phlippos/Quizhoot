@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/quiz_service.dart';
+
 class QuizView extends StatefulWidget {
-  final List<Map<String,dynamic>>? flashcards;
+  final List<Map<String, dynamic>>? flashcards;
   const QuizView({super.key}) : flashcards = null;
-  const QuizView.withFlashcards({
-    super.key,
-    required this.flashcards
-  });
+  const QuizView.withFlashcards({super.key, required this.flashcards});
   @override
   _QuizViewState createState() => _QuizViewState();
 }
@@ -20,8 +18,8 @@ class _QuizViewState extends State<QuizView> {
   void initState() {
     super.initState();
     questions = _quizService.generateQuestions(widget.flashcards);
-
   }
+
   int currentQuestionIndex = 0; // Keeps track of the current question
   int score = 0; // User's score
   String? selectedAnswer; // Selected answer by the user
@@ -132,6 +130,26 @@ class _QuizViewState extends State<QuizView> {
             child: const Text('Back to Flashcards'), // Button text
           ),
         ],
+      ),
+    );
+  }
+}
+
+class WrittenQuizPlaceholder extends StatelessWidget {
+  const WrittenQuizPlaceholder({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Written Quiz'),
+        backgroundColor: const Color(0xFF3A1078),
+      ),
+      body: const Center(
+        child: Text(
+          'Written quiz!',
+          style: TextStyle(fontSize: 24),
+        ),
       ),
     );
   }
