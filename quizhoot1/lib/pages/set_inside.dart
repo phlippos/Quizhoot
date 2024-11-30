@@ -3,7 +3,8 @@ import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
-import 'quiz_view.dart';
+import 'package:quizhoot/pages/start_quiz_view.dart';
+//import 'quiz_view.dart';
 
 class SetInside extends StatefulWidget {
   const SetInside({super.key});
@@ -72,7 +73,7 @@ class _SetInsideState extends State<SetInside> {
               _buildNavigationButton(
                 context: context,
                 label: 'Start Quiz',
-                targetPage: const QuizView(),
+                targetPage: const StartQuizView(),
               ),
               _buildNavigationButton(
                 context: context,
