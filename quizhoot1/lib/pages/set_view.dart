@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
-import 'set_inside.dart'; // Bu dosyayı ekleyin
+import 'set_inside.dart';
+import "flashcard_creation.dart";
 import '../services/set_service.dart';
 
 class FlashcardViewPage extends StatelessWidget {
@@ -37,6 +38,11 @@ class _SetContentState extends State<SetContent> {
   void initState() {
     super.initState();
     _fetchSets();
+  }
+  void _deleteSet(int index) {
+    setState(() {
+      sets.removeAt(index); // Remove the set at the specified index
+    });
   }
 
   Future<void> _fetchSets() async {
@@ -88,6 +94,7 @@ class _SetContentState extends State<SetContent> {
                     ),
                   );
                 },
+                onDelete: () => _deleteSet(sets.indexOf(set)), // Pass delete callback
               ),
               const SizedBox(height: 16),
             ],
@@ -103,6 +110,7 @@ class SetCard extends StatelessWidget {
   final String termCount;
   final String createdBy;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const SetCard({
     super.key,
@@ -110,6 +118,7 @@ class SetCard extends StatelessWidget {
     required this.termCount,
     required this.createdBy,
     required this.onTap,
+    required this.onDelete,
   });
 
   @override
@@ -137,10 +146,27 @@ class SetCard extends StatelessWidget {
               children: [
                 const Icon(Icons.format_list_numbered, size: 40), // Set ikonu
                 const SizedBox(width: 10),
-                Text(
-                  setName, // Set adı buraya yazılacak
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                Expanded(
+                  child: Text(
+                    setName,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateFlashcardPage(),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
+                  onPressed: onDelete, // Call delete function
                 ),
               ],
             ),

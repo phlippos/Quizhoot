@@ -1,42 +1,27 @@
 import 'package:flutter/material.dart';
-
+import '../services/quiz_service.dart';
 class QuizView extends StatefulWidget {
-  const QuizView({super.key});
-
+  final List<Map<String,dynamic>>? flashcards;
+  const QuizView({super.key}) : flashcards = null;
+  const QuizView.withFlashcards({
+    super.key,
+    required this.flashcards
+  });
   @override
   _QuizViewState createState() => _QuizViewState();
 }
 
 class _QuizViewState extends State<QuizView> {
   // List of questions with options and the correct answer
-  final List<Map<String, dynamic>> questions = [
-    {
-      'question': 'Apple',
-      'options': ['Apfel', 'Aprikose', 'Kirsche', 'Melone'],
-      'answer': 'Apfel'
-    },
-    {
-      'question': 'Cherry',
-      'options': ['Aprikose', 'Melone', 'Kirsche', 'Apfel'],
-      'answer': 'Kirsche'
-    },
-    {
-      'question': 'Apricot',
-      'options': ['Aprikose', 'Kirsche', 'Birne', 'Melone'],
-      'answer': 'Aprikose'
-    },
-    {
-      'question': 'Pear',
-      'options': ['Melone', 'Apfel', 'Kirsche', 'Birne'],
-      'answer': 'Birne'
-    },
-    {
-      'question': 'Melon',
-      'options': ['Apfel', 'Melone', 'Aprikose', 'Apfel'],
-      'answer': 'Melone'
-    },
-  ];
+  final QuizService _quizService = QuizService();
+  late List<Map<String, dynamic>> questions;
 
+  @override
+  void initState() {
+    super.initState();
+    questions = _quizService.generateQuestions(widget.flashcards);
+
+  }
   int currentQuestionIndex = 0; // Keeps track of the current question
   int score = 0; // User's score
   String? selectedAnswer; // Selected answer by the user
