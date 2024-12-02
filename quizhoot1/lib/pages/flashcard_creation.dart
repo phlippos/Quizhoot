@@ -27,7 +27,7 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
   Future<void> _createSet() async {
     if (_setNameController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('All fields are required')),
+          const SnackBar(content: Text('Please enter a title for the set.')),
       );
       return;
     }
@@ -37,7 +37,7 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
         final Map<String,dynamic> data = jsonDecode(response.body);
         setID = data['id'];
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Set created ')),
+          const SnackBar(content: Text('Flashcard set created successfully!')),
         );
 
       }
@@ -80,16 +80,17 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
         await _createRelationSet_Flashcard(setID, data['id']);
       }else{
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('flashcard creation failed')),
+          const SnackBar(content: Text('Flashcard creation failed')),
         );
         return;
       }
     }catch(e){
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('flashcard creation failed $e')),
+        SnackBar(content: Text('Flashcard creation failed $e')),
       );
     }
   }
+
 
   List<Map<String, String>> flashcards = [
     {'term': '', 'definition': ''} // Initial empty flashcard
@@ -104,25 +105,27 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
     });
   }
 
+  // Function to delete a flashcard
+  void deleteFlashcard(int index) {
+    setState(() {
+      flashcards.removeAt(index);
+    });
+  }
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context)
-        .size
-        .width; // Get the screen width for responsive layout
+    double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF3A1078), // Set background color
+      backgroundColor: const Color(0xFF3A1078),
       appBar: AppBar(
-        backgroundColor:
-            const Color(0xFF3A1078), // Match the app bar color with background
+        backgroundColor: const Color(0xFF3A1078),
         title: const Text(
-          'Create Flashcard', // Title of the page
-          style: TextStyle(color: Colors.black), // Text color in the app bar
+          'Create Flashcard',
+          style: TextStyle(color: Colors.black),
         ),
         actions: [
-          // Button to navigate to Flashcard view
           IconButton(
-            icon: const Icon(Icons.playlist_add_check),
+            icon: const Icon(Icons.save),
             color: Colors.green,
             onPressed:() async {
 
@@ -142,94 +145,107 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
                   );
                 }else{
                   duplicateIndices = _flashcardService.getDuplicateIndices(flashcards);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Duplicate terms are not allowed.')),
+                  );
                 }
               }else{
                 nullTermOrDefinitionIndices = _flashcardService.getNullTermOrDefinitionIndices(flashcards);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('All cards must have both term and definition.')),
+                );
               }
-            },
+            }, // Save the set on button press
           ),
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0), // Padding for the body content
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Input field for entering a title for the flashcard set
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              width: width * 0.9, // 90% of the screen width
+              width: width * 0.9,
               decoration: BoxDecoration(
-                color: Colors
-                    .grey[200], // Light grey background for the input field
-                borderRadius: BorderRadius.circular(8.0), // Rounded corners
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8.0),
               ),
               child: TextField(
                 controller: _setNameController,
                 decoration: const InputDecoration(
-                  border: InputBorder.none, // No border
-                  hintText: 'Enter a title', // Placeholder text
+                  border: InputBorder.none,
+                  hintText: 'Enter a title',
                 ),
               ),
             ),
-            const SizedBox(
-                height: 20), // Space between title input and flashcard list
+            const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: flashcards.length, // Number of flashcards to display
+                itemCount: flashcards.length,
                 itemBuilder: (context, index) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10.0),
                     child: Container(
                       padding: const EdgeInsets.all(16.0),
-                      width: width *
-                          0.9, // 90% of the screen width for each flashcard container
+                      width: width * 0.9,
                       decoration: BoxDecoration(
-                        color: Colors
-                            .grey[200], // Light grey background for flashcards
-                        borderRadius: BorderRadius.circular(
-                            8.0), // Rounded corners for flashcards
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12.0),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 8.0,
+                            offset: Offset(2, 4), // Shadow position
+                          ),
+                        ],
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Stack(
                         children: [
-                          // Display the card number
-                          Text(
-                            'Card ${index + 1}',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Card ${index + 1}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  labelText: 'Enter term',
+                                ),
+                                onChanged: (value) {
+                                  flashcards[index]['term'] = value;
+                                },
+                              ),
+                              const SizedBox(height: 10),
+                              TextField(
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                  labelText: 'Enter definition',
+                                ),
+                                onChanged: (value) {
+                                  flashcards[index]['definition'] = value;
+                                },
+                              ),
+                            ],
                           ),
-                          const SizedBox(
-                              height:
-                                  10), // Space between title and input fields
-                          // Text field for entering the term
-                          TextField(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText:
-                                  'Enter term', // Label for the term input field
+                          Positioned(
+                            top: -10,
+                            right: -10,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Color(0xFF3A1078),
+                                size: 28,
+                              ),
+                              onPressed: () => deleteFlashcard(index),
                             ),
-                            onChanged: (value) {
-                              flashcards[index]['term'] =
-                                  value; // Update the term when changed
-                            },
-                          ),
-                          const SizedBox(
-                              height:
-                                  10), // Space between term input and definition input
-                          // Text field for entering the definition
-                          TextField(
-                            decoration: const InputDecoration(
-                              border: OutlineInputBorder(),
-                              labelText:
-                                  'Enter definition', // Label for the definition input field
-                            ),
-                            onChanged: (value) {
-                              flashcards[index]['definition'] =
-                                  value; // Update the definition when changed
-                            },
                           ),
                         ],
                       ),
@@ -241,13 +257,10 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
           ],
         ),
       ),
-      // Floating action button to add new flashcards
       floatingActionButton: FloatingActionButton(
-        onPressed: addFlashcard, // Call addFlashcard function on press
-        backgroundColor: const Color.fromARGB(
-            255, 150, 100, 255), // Custom background color for the button
-        child: const Icon(
-            Icons.add), // Plus icon to represent adding a new flashcard
+        onPressed: addFlashcard,
+        backgroundColor: const Color.fromARGB(255, 150, 100, 255),
+        child: const Icon(Icons.add),
       ),
     );
   }

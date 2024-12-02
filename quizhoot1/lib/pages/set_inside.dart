@@ -3,6 +3,8 @@ import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'quiz_view.dart';
 import '../services/set_flashcard_service.dart';
+import 'package:quizhoot/pages/cards.dart';
+import 'package:quizhoot/pages/scrambledGame.dart';
 
 class SetInside extends StatefulWidget {
   final int? setID; // Set ID can be nullable for the default constructor
@@ -27,12 +29,12 @@ class _SetInsideState extends State<SetInside> {
   List<Map<String, dynamic>> flashcards = [];
 
   final FlutterTts _flutterTts =
-      FlutterTts(); // Flutter TTS (Text-to-Speech) instance
-  List<bool> favorites =
-      List.filled(5, false); // List to track favorite status for each flashcard
+  FlutterTts(); // Flutter TTS (Text-to-Speech) instance
   List<bool> selectedSets =
-      List.filled(3, false); // List to track selected sets
+  List.filled(3, false); // List to track selected sets
   bool showSetOptions = false; // Boolean to toggle visibility of set options
+  bool showDefinitions = false;
+
 
   @override
   void initState(){
@@ -84,7 +86,7 @@ class _SetInsideState extends State<SetInside> {
       appBar: AppBar(
         title: const Text('Set Inside'),
         backgroundColor:
-            const Color(0xFF3A1078), // Custom color for the app bar
+        const Color(0xFF3A1078), // Custom color for the app bar
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -107,25 +109,49 @@ class _SetInsideState extends State<SetInside> {
             ),
           ),
           const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to QuizView when the button is pressed
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const QuizView()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              foregroundColor: Colors.black,
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavigationButton(
+                context: context,
+                label: 'Start Quiz',
+                targetPage: const QuizView(),
+                onPressed : () {
+                  if(flashcards.length > 4 ) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) =>
+                          QuizView.withFlashcards(flashcards: flashcards)),
+                    );
+                  }else{
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('min required number of term is 4 for this quiz type.')),
+                    );
+                  }
+                }
               ),
-            ),
-            child: const Text('Start Quiz'),
+              _buildNavigationButton(
+                context: context,
+                label: 'Scrambled Game',
+                targetPage: const ScrambledGame(),
+              ),
+              _buildNavigationButton(
+                context: context,
+                label: 'Cards',
+                targetPage: const CardsPage(),
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
           _buildSetOptions(), // Display set options widget
+          const SizedBox(height: 10),
+          _buildShowDefinitionsButton(), // Display Show Definitions button
+          const SizedBox(height: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              child:
+              _buildFlashcardList(), // Display the list of all flashcards in a scrollable view
+            ),
+          ),
         ],
       ),
       backgroundColor: const Color(0xFF3A1078), // Custom background color
@@ -176,11 +202,17 @@ class _SetInsideState extends State<SetInside> {
               onPressed: () {
                 setState(() {
                   flashcards[index]['fav'] =
-                      !flashcards[index]['fav']; // Toggle the favorite status
-
+                  !flashcards[index]['fav']; // Toggle the favorite status
+                  _updateFavStatus(flashcards[index]['id'],flashcards[index]['fav']);
                 });
-
-                _updateFavStatus(flashcards[index]['id'],flashcards[index]['fav']);
+                final snackBar = SnackBar(
+                  content: Text(flashcards[index]['fav']
+                      ? 'Added to favorites'
+                      : 'Removed from favorites'), // Show feedback message
+                  duration: const Duration(seconds: 1),
+                );
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(snackBar); // Display the snackbar message
               },
             ),
           ),
@@ -193,7 +225,7 @@ class _SetInsideState extends State<SetInside> {
               onPressed: () {
                 setState(() {
                   showSetOptions =
-                      !showSetOptions; // Toggle visibility of set options
+                  !showSetOptions; // Toggle visibility of set options
                 });
               },
             ),
@@ -280,9 +312,165 @@ class _SetInsideState extends State<SetInside> {
 
   // Method to trigger text-to-speech for a given text
   Future<void> _speak(String text) async {
-    await _flutterTts.setLanguage("en-US"); // Set language to English
-    await _flutterTts.setPitch(10.0); // Increase the pitch for higher tone
-    await _flutterTts.setSpeechRate(0.5); // Adjust the speech rate
-    await _flutterTts.speak(text); // Speak the text
+    await _flutterTts.speak(text);
+  }
+
+// Displays the list of all flashcards, including the edit button, with toggle functionality
+// Displays the list of all flashcards, including the edit and delete buttons, with toggle functionality
+  Widget _buildFlashcardList() {
+    if (!showDefinitions) {
+      return const SizedBox(); // Return an empty container when hidden
+    }
+
+    return Column(
+      children: flashcards
+          .asMap()
+          .entries
+          .map(
+            (entry) => ListTile(
+          title: Text(
+            entry.value['term']!,
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color.fromARGB(221, 5, 5, 5)),
+          ),
+          subtitle: Text(
+            entry.value['definition']!,
+            style: const TextStyle(
+                fontSize: 16, color: Color.fromARGB(255, 198, 189, 189)),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Edit Button
+              IconButton(
+                icon: const Icon(Icons.edit,
+                    color: Color.fromARGB(255, 198, 189, 189)),
+                onPressed: () =>
+                    _editFlashcard(entry.key), // Call edit method
+              ),
+              // Delete Button
+              IconButton(
+                icon: const Icon(Icons.delete,
+                    color: Color.fromARGB(255, 198, 189, 189)),
+                onPressed: () =>
+                    _deleteFlashcard(entry.key), // Call delete method
+              ),
+            ],
+          ),
+        ),
+      )
+          .toList(),
+    );
+  }
+
+// Method to delete a flashcard
+  void _deleteFlashcard(int index) {
+    setState(() {
+      flashcards.removeAt(index); // Remove the flashcard at the given index
+    });
+
+    final snackBar = SnackBar(
+      content: const Text('Flashcard deleted'), // Show feedback message
+      duration: const Duration(seconds: 1),
+    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(snackBar); // Display the snackbar message
+  }
+
+  Widget _buildNavigationButton({
+    required BuildContext context,
+    required String label,
+    required Widget targetPage,
+    VoidCallback? onPressed,
+  }) {
+    return ElevatedButton(
+      onPressed: onPressed ?? () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => targetPage),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(label),
+    );
+  }
+
+  // Displays the "Show Words" button
+  Widget _buildShowDefinitionsButton() {
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          showDefinitions =
+          !showDefinitions; // Toggle showing words and edit button
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(showDefinitions ? 'Hide Words' : 'Show Words'),
+    );
+  }
+
+// Opens a dialog to edit a flashcard
+  void _editFlashcard(int index) {
+    final termController =
+    TextEditingController(text: flashcards[index]['term']);
+    final definitionController =
+    TextEditingController(text: flashcards[index]['definition']);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Flashcard'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: termController,
+                decoration: const InputDecoration(labelText: 'Term'),
+              ),
+              TextField(
+                controller: definitionController,
+                decoration: const InputDecoration(labelText: 'Definition'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  flashcards[index] = {
+                    'term': termController.text,
+                    'definition': definitionController.text,
+                  }; // Update the flashcard
+                });
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

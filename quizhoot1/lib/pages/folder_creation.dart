@@ -24,7 +24,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
 
   void _showFolderDialog() {
     TextEditingController folderNameController =
-        TextEditingController(); // Controller for the folder name input
+    TextEditingController(); // Controller for the folder name input
 
     showDialog(
       context: context,
@@ -54,7 +54,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
                       return CheckboxListTile(
                         title: Text(availableSets[index]), // Displays set name
                         value: setSelections[
-                            index], // Checks if the set is selected
+                        index], // Checks if the set is selected
                         onChanged: (bool? value) {
                           setState(() {
                             setSelections[index] =
@@ -127,7 +127,8 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showFolderDialog, // Opens dialog to create folder
-        backgroundColor: const Color(0xFF3A1078), // Button background color
+        backgroundColor:
+        const Color.fromARGB(255, 237, 234, 240), // Button background color
         child: const Icon(Icons.add), // Icon for the floating button
       ),
     );
