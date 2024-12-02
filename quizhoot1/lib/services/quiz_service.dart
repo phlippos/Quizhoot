@@ -5,7 +5,7 @@ import 'auth_services.dart';
 
 
 class QuizService{
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService.instance;
 
   List<Map<String, dynamic>> generateQuestions(List<Map<String,dynamic>>? flashcards, {bool onlyFavorites = false}) {
     if(flashcards == null){

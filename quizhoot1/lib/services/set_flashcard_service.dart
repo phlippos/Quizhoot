@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'auth_services.dart';
 
 class Set_FlashcardService{
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService.instance;
   List<Map<String,dynamic>> data = [];
 
 

@@ -62,8 +62,8 @@ class UserViewSet(viewsets.ModelViewSet):
         user = User.objects.get(username = username)
         if user and user.password == password:
             token, created = Token.objects.get_or_create(user=user)
-            
-            return Response({'access_token': token.key},status = 200)
+            serializer = self.get_serializer(user)
+            return Response({'access_token': token.key,'user':serializer.data},status = 200)
         return Response({'error': 'Invalid credentials'}, status=400)
     
     

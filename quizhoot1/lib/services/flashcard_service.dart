@@ -4,7 +4,7 @@ import 'auth_services.dart';
 
 
 class FlashcardService{
-  final AuthService _authService = AuthService();
+  final AuthService _authService = AuthService.instance;
 
 
   Future<http.Response> createFlashcard(String? term,String? definition) async {

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:quizhoot/pages/loginPage.dart'; // Import the next page after sign up
 import 'package:sign_in_button/sign_in_button.dart'; // Import the Google sign-in button
-import '../services/auth_services.dart';
+import '../classes/User.dart';
+import 'package:provider/provider.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -11,7 +12,6 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  final AuthService _authService = AuthService();
 
   // Controllers for the text fields
   final TextEditingController _firstNameController = TextEditingController();
@@ -45,27 +45,25 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
+    final User user = Provider.of<User>(context,listen: false);
+
     try {
-      final response = await _authService.register(
-        _firstNameController.text,
-        _lastNameController.text,
-        _usernameController.text,
-        _emailController.text,
-        _phoneNumberController.text,
-        _passwordController.text
+      final response = await user.register(
+          _firstNameController.text,
+          _lastNameController.text,
+          _usernameController.text,
+          _emailController.text,
+          _passwordController.text,
+          _phoneNumberController.text
       );
-      if (response.statusCode == 201) {
+      if(response.statusCode == 201){
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration successful')),
+          SnackBar(content: Text('Registration successfull.')),
         );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => const LoginPage(),
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed: ${response.body}')),
         );
       }
     } catch (e) {
@@ -252,3 +250,5 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 }
+
+

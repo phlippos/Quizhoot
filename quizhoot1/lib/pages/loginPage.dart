@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:quizhoot/pages/notificationsLogin.dart';
 import 'package:sign_in_button/sign_in_button.dart';
+import 'package:provider/provider.dart';
 // Import the signup page
 import 'signUpPage.dart'; // Import the signup page
-import '../services/auth_services.dart';
+import '../classes/User.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,7 +12,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage>{
-  final AuthService _authService = AuthService();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -24,24 +23,38 @@ class _LoginPageState extends State<LoginPage>{
       );
       return;
     }
+    try {
+      User user = Provider.of<User>(context,listen:false);
 
-      final response = await _authService.login(
+      final responseStatusCode = await user.login(
           _usernameController.text,
           _passwordController.text
       );
-      if (response.statusCode == 200){
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) =>
-            const NotificationsLoginPage(), // Navigate to NotificationsLoginPage
-          ),
-        );
-      }else{
+
+      if (responseStatusCode == 200) {
+        if (user.mindfulness == 0) {
+          Navigator.pushNamed(
+            context,
+            '/notificationsLogin',
+            arguments: user,
+          );
+        } else {
+          Navigator.pushNamed(
+            context,
+            '/home',
+            arguments: user,
+          );
+        }
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${response.body}')),
+          SnackBar(content: Text('Login failed: ${responseStatusCode}')),
         );
       }
-
+    }catch(e){
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Login failed: ${e}')),
+      );
+    }
   }
 
   @override

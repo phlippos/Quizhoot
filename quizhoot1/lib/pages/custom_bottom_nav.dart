@@ -4,11 +4,12 @@ import 'package:quizhoot/pages/notificationPage.dart';
 import 'package:quizhoot/pages/set_view.dart';
 import 'homePage.dart';
 import 'profilePage.dart';
-
+import '../classes/User.dart';
 class CustomBottomNav extends StatelessWidget {
   final int initialIndex;
 
   const CustomBottomNav({super.key, required this.initialIndex});
+
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,7 @@ class CustomBottomNav extends StatelessWidget {
           case 0:
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const HomePage()),
+              MaterialPageRoute(builder: (context) => HomePage()),
             );
             break;
           case 1:

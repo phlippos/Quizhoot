@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quizhoot/pages/homePage.dart';
-import '../services/auth_services.dart';
-
+import '../classes/User.dart';
+import 'package:provider/provider.dart';
 class NotificationsLoginPage extends StatefulWidget {
   const NotificationsLoginPage({super.key});
 
@@ -12,25 +12,16 @@ class NotificationsLoginPage extends StatefulWidget {
 class _NotificationsLoginPageState extends State<NotificationsLoginPage> {
   int?
       selectedSessions; // Variable to store the selected number of sessions per week
-  AuthService _authService = AuthService();
 
-  void _setMindfulness() async{
+  void _setMindfulness(User user) async{
     try {
-      final response = await _authService.setMindfulness(selectedSessions);
-      if (response.statusCode == 200) {
-        print('Selected sessions per week: $selectedSessions');
-        Navigator.pushReplacement(
+      user.mindfulness = selectedSessions! ;//????????
+      print('Selected sessions per week: $selectedSessions');
+      Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-              builder: (context) =>
-              const HomePage()), // Navigate to HomePage
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to set mindfulness 31 : ${response.statusCode}')),
-        );
-        return;
-      }
+          '/home',
+          arguments: user
+      );
     }catch(e){
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Fail : $e')),
@@ -41,6 +32,7 @@ class _NotificationsLoginPageState extends State<NotificationsLoginPage> {
   Widget build(BuildContext context) {
     double height = MediaQuery.of(context).size.height; // Get screen height
     double width = MediaQuery.of(context).size.width; // Get screen width
+    final User user = Provider.of(context,listen: false);
 
     return Scaffold(
       backgroundColor: const Color(0xFF3A1078), // Set background color
@@ -153,7 +145,7 @@ class _NotificationsLoginPageState extends State<NotificationsLoginPage> {
               onPressed: selectedSessions != null
                   ? () {
                       // When selectedSessions is not null, proceed with submission
-                    _setMindfulness();
+                    _setMindfulness(user);
 
                     }
                   : null, // Disable button if no selection is made

@@ -8,10 +8,11 @@ import 'package:quizhoot/pages/quiz_creation.dart';
 import 'package:quizhoot/pages/wordle.dart';
 import 'package:quizhoot/pages/word_chain.dart';
 import 'custom_bottom_nav.dart';
+import '../classes/User.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   _HomePageState createState() => _HomePageState();
 }
@@ -94,7 +95,7 @@ class _HomePageState extends State<HomePage> {
     // Getting the screen height and width for responsive layout
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-
+    User user = Provider.of<User>(context,listen:false);
     return Scaffold(
       backgroundColor: const Color(0xFF3A1078),
       body: Padding(
@@ -123,10 +124,10 @@ class _HomePageState extends State<HomePage> {
             // User welcome message and profile section
             Row(
               children: [
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Welcome to the QuizHoot',
                       style: TextStyle(
                         fontSize: 18,
@@ -135,8 +136,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Text(
-                      'Abdullah baba',
-                      style: TextStyle(
+                       user.username,
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -212,7 +213,7 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       // Custom bottom navigation bar
-      bottomNavigationBar: const CustomBottomNav(initialIndex: 0),
+      bottomNavigationBar: CustomBottomNav(initialIndex: 0),
     );
   }
 
