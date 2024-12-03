@@ -24,7 +24,7 @@ Link: https://youtu.be/EhGW4UYpKSE?si=NW1FzKU-CqD5uIrg
 - Clone the repository to your local machine.
 
   ```bash
-  git clone https://github.com/AbdullahOztoprak/QuizHootProject.git
+  git clone https://github.com/phlippos/Quizhoot/QuizHootProject.git
   ```
 
 - Navigate into the project directory
