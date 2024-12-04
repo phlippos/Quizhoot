@@ -3,6 +3,7 @@ import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'quiz_view.dart';
 import '../services/set_flashcard_service.dart';
+import '../services/flashcard_service.dart';
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
 
@@ -24,6 +25,7 @@ class SetInside extends StatefulWidget {
 class _SetInsideState extends State<SetInside> {
 
   Set_FlashcardService _set_flashcardService = Set_FlashcardService();
+  FlashcardService _flashcardService = FlashcardService();
 
   // List of flashcards with terms and their definitions
   List<Map<String, dynamic>> flashcards = [];
@@ -370,7 +372,7 @@ class _SetInsideState extends State<SetInside> {
 
     try {
       // Call the delete API service
-      final response = await _set_flashcardService.deleteFlashcard(flashcardID);
+      final response = await _flashcardService.deleteFlashcard(flashcardID);
 
       if (response.statusCode == 204) {
         // If delete was successful, remove the flashcard from the local list
@@ -480,7 +482,7 @@ class _SetInsideState extends State<SetInside> {
                 final updatedDefinition = definitionController.text;
 
                 // Call the method to update the flashcard
-                await _set_flashcardService.updateFlashcard(flashcardID, updatedTerm, updatedDefinition);
+                await _flashcardService.updateFlashcard(flashcardID, updatedTerm, updatedDefinition);
 
                 // Close the dialog
                 Navigator.of(context).pop();
