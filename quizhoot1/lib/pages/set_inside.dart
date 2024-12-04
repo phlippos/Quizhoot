@@ -365,19 +365,39 @@ class _SetInsideState extends State<SetInside> {
     );
   }
 
-// Method to delete a flashcard
-  void _deleteFlashcard(int index) {
-    setState(() {
-      flashcards.removeAt(index); // Remove the flashcard at the given index
-    });
+  void _deleteFlashcard(int index) async {
+    final flashcardID = flashcards[index]['id'];  // Get the flashcard ID
 
-    final snackBar = SnackBar(
-      content: const Text('Flashcard deleted'), // Show feedback message
-      duration: const Duration(seconds: 1),
-    );
-    ScaffoldMessenger.of(context)
-        .showSnackBar(snackBar); // Display the snackbar message
+    try {
+      // Call the delete API service
+      final response = await _set_flashcardService.deleteFlashcard(flashcardID);
+
+      if (response.statusCode == 204) {
+        // If delete was successful, remove the flashcard from the local list
+        setState(() {
+          flashcards.removeAt(index);
+        });
+
+        // Show success message
+        final snackBar = SnackBar(
+          content: const Text('Flashcard deleted'),
+          duration: const Duration(seconds: 1),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      } else {
+        // Show error message if the delete failed
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting flashcard')),
+        );
+      }
+    } catch (e) {
+      // Handle any errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete flashcard: $e')),
+      );
+    }
   }
+
 
   Widget _buildNavigationButton({
     required BuildContext context,
@@ -424,12 +444,10 @@ class _SetInsideState extends State<SetInside> {
     );
   }
 
-// Opens a dialog to edit a flashcard
   void _editFlashcard(int index) {
-    final termController =
-    TextEditingController(text: flashcards[index]['term']);
-    final definitionController =
-    TextEditingController(text: flashcards[index]['definition']);
+    final termController = TextEditingController(text: flashcards[index]['term']);
+    final definitionController = TextEditingController(text: flashcards[index]['definition']);
+    final flashcardID = flashcards[index]['id']; // Get the flashcard ID
 
     showDialog(
       context: context,
@@ -457,14 +475,23 @@ class _SetInsideState extends State<SetInside> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () {
-                setState(() {
-                  flashcards[index] = {
-                    'term': termController.text,
-                    'definition': definitionController.text,
-                  }; // Update the flashcard
-                });
-                Navigator.of(context).pop(); // Close the dialog
+              onPressed: () async {
+                final updatedTerm = termController.text;
+                final updatedDefinition = definitionController.text;
+
+                // Call the method to update the flashcard
+                await _set_flashcardService.updateFlashcard(flashcardID, updatedTerm, updatedDefinition);
+
+                // Close the dialog
+                Navigator.of(context).pop();
+
+                // Refresh the flashcards after the update
+                await _fetchFlashcards(); // Fetch updated flashcards
+
+                // Optional: Show a confirmation snackBar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Flashcard updated successfully!')),
+                );
               },
               child: const Text('Save'),
             ),
@@ -473,4 +500,8 @@ class _SetInsideState extends State<SetInside> {
       },
     );
   }
+
+
+
+
 }
