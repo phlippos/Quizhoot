@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:quizhoot/pages/flashcard_update.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'set_inside.dart';
-import "flashcard_creation.dart";
+//import "flashcard_creation.dart";
 import '../services/set_service.dart';
 
 class FlashcardViewPage extends StatelessWidget {
@@ -39,6 +40,17 @@ class _SetContentState extends State<SetContent> {
     super.initState();
     _fetchSets();
   }
+
+  void _addPlaceholderSet() {
+    // Placeholder set for testing
+    sets.add({
+      'id': 1,
+      'set_name': 'Sample Set',
+      'size': 5,
+      'createdBy': 'Test User',
+    });
+  }
+
   void _deleteSet(int index) {
     setState(() {
       sets.removeAt(index); // Remove the set at the specified index
@@ -54,7 +66,6 @@ class _SetContentState extends State<SetContent> {
       });
     } catch (e) {
       print('Error fetching sets: $e');
-
     }
   }
 
@@ -63,44 +74,46 @@ class _SetContentState extends State<SetContent> {
     return Center(
       child: sets.isEmpty
           ? Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'You have not created any sets yet.',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          CircularProgressIndicator(),
-        ],
-      )
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'You have not created any sets yet.',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CircularProgressIndicator(),
+              ],
+            )
           : Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: sets.map((set) {
-          return Column(
-            children: [
-              SetCard(
-                setName: set['set_name']!,
-                termCount: set['size']!.toString(),
-                createdBy: set['createdBy']!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SetInside.withSetID(setID: set['id']!),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: sets.map((set) {
+                return Column(
+                  children: [
+                    SetCard(
+                      setName: set['set_name']!,
+                      termCount: set['size']!.toString(),
+                      createdBy: set['createdBy']!,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                SetInside.withSetID(setID: set['id']!),
+                          ),
+                        );
+                      },
+                      onDelete: () =>
+                          _deleteSet(sets.indexOf(set)), // Pass delete callback
                     ),
-                  );
-                },
-                onDelete: () => _deleteSet(sets.indexOf(set)), // Pass delete callback
-              ),
-              const SizedBox(height: 16),
-            ],
-          );
-        }).toList(),
-      ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              }).toList(),
+            ),
     );
   }
 }
@@ -159,7 +172,14 @@ class SetCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CreateFlashcardPage(),
+                        builder: (context) => UpdateFlashcardPage(
+                          setName: setName,
+                          flashcards: [
+                            {'term': 'Term 1', 'definition': 'Definition 1'},
+                            {'term': 'Term 2', 'definition': 'Definition 2'},
+                            {'term': 'Term 3', 'definition': 'Definition 3w'},
+                          ],
+                        ),
                       ),
                     );
                   },
