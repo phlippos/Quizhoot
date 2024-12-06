@@ -66,7 +66,17 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'access_token': token.key,'user':serializer.data},status = 200)
         return Response({'error': 'Invalid credentials'}, status=400)
     
-    
+    @action(detail=True, methods=['put'], url_path='update')
+    def update_user(self, request,user_id = None):
+        try:
+            user = User.objects.get(id = user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class UserProfileViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
@@ -101,6 +111,7 @@ class SetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='list')
     def list_sets(self, request):
+        print("username ",request.user.username)
         user_id = User.get_user_id(request.user.username)
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -242,8 +253,9 @@ class Set_FlashcardViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['put'], url_path='update')
     def update_set_flashcard(self, request, flashcard_id = None):
+        user_id = User.get_user_id(request.user.username)
         try:
-            set_flashcard = Set_Flashcard.objects.get(flashcard_id = flashcard_id)
+            set_flashcard = Set_Flashcard.objects.get(flashcard_id = flashcard_id,user_id=user_id)
         except Set_Flashcard.DoesNotExist:
             return Response({"error": "Set_Flashcard not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(set_flashcard, data=request.data, partial=True)

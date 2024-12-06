@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../classes/User.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'set_inside.dart';
 import "flashcard_creation.dart";
-import '../services/set_service.dart';
+import '../classes/Set.dart';
 
 class FlashcardViewPage extends StatelessWidget {
   const FlashcardViewPage({super.key});
@@ -31,26 +33,26 @@ class SetContent extends StatefulWidget {
 }
 
 class _SetContentState extends State<SetContent> {
-  final SetService _setService = SetService();
-  List<Map<String, dynamic>> sets = [];
-
+  late User _user;
+  bool _isLoading = true; // Add a loading state
   @override
   void initState() {
+    _user = Provider.of<User>(context,listen:false);
     super.initState();
-    _fetchSets();
+    _fetchSets(_user);
   }
-  void _deleteSet(int index) {
-    setState(() {
-      sets.removeAt(index); // Remove the set at the specified index
-    });
+  _deleteSet(int index){
+    _user.components.removeAt(index);
   }
-
-  Future<void> _fetchSets() async {
+  Future<void> _fetchSets(User user) async {
     try {
-      await _setService.fetchData();
-      List<Map<String, dynamic>> fetchedSets = _setService.data;
+      List<Map<String, dynamic>> fetchedSets = await Set.fetchSets();
+
+      fetchedSets.forEach((set){
+        user.addComponent(Set(set["id"],set["set_name"], set["size"]));
+      });
       setState(() {
-        sets = fetchedSets;
+        _isLoading = false; // Update loading state when data is fetched
       });
     } catch (e) {
       print('Error fetching sets: $e');
@@ -61,7 +63,23 @@ class _SetContentState extends State<SetContent> {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: sets.isEmpty
+      child: _isLoading
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Loading your sets...',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                CircularProgressIndicator(),
+              ],
+            )
+          : _user.components.isEmpty
           ? Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -79,22 +97,23 @@ class _SetContentState extends State<SetContent> {
       )
           : Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: sets.map((set) {
+        children: _user.components.whereType<Set>().toList().map((set) {
+
           return Column(
             children: [
               SetCard(
-                setName: set['set_name']!,
-                termCount: set['size']!.toString(),
-                createdBy: set['createdBy']!,
+                setName: set.name,
+                termCount: set.size.toString(),
+                createdBy: _user.username,
                 onTap: () {
-                  Navigator.push(
+
+                  Navigator.pushNamed(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => SetInside.withSetID(setID: set['id']!),
-                    ),
+                    '/setInside',
+                    arguments: set,
                   );
                 },
-                onDelete: () => _deleteSet(sets.indexOf(set)), // Pass delete callback
+                onDelete: () => _deleteSet(_user.components.indexOf(set)), // Pass delete callback
               ),
               const SizedBox(height: 16),
             ],

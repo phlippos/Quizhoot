@@ -1,9 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quizhoot/classes/Flashcard.dart';
 import 'set_view.dart'; // Import the necessary page for navigation
 import '../services/set_service.dart';
 import '../services/flashcard_service.dart';
 import '../services/set_flashcard_service.dart';
+
+import '../classes/User.dart';
+import '../classes/Set.dart';
+
 
 class CreateFlashcardPage extends StatefulWidget {
   const CreateFlashcardPage({super.key});
@@ -16,85 +22,78 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
 
   List<int> nullTermOrDefinitionIndices = [];
   List<int> duplicateIndices = [];
-
-  int setID = -1;
-  SetService _setService = SetService();
-  FlashcardService _flashcardService = FlashcardService();
-  Set_FlashcardService _set_flashcardService = Set_FlashcardService();
+  late User _user;
+  late Set _set;
   int cardNumber = 1; // Tracks the number of flashcards
   final TextEditingController _setNameController = TextEditingController();
-
-  Future<void> _createSet() async {
-    if (_setNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please enter a title for the set.')),
-      );
-      return;
-    }
-    try {
-      final response = await _setService.createSet(_setNameController.text,cardNumber);
-      if (response.statusCode == 201) {
-        final Map<String,dynamic> data = jsonDecode(response.body);
-        setID = data['id'];
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Flashcard set created successfully!')),
-        );
-
-      }
-      else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('set creation failed')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('set creation failed $e')),
-      );
-    }
-  }
-
-  Future<void> _createRelationSet_Flashcard(int setID,int flashcardID) async {
-    try{
-      final response = await _set_flashcardService.createRelationSet_Flashcard(setID, flashcardID);
-      if(response.statusCode == 201){
-        return;
-      }
-    }catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
-      );
-    }
-  }
-
-  Future<void> _createFlashcard(Map<String,String>? wordPair) async{
-    if( wordPair != null && (wordPair['term']!.isEmpty || wordPair['definition']!.isEmpty)){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('fields are required')),
-      );
-      return;
-    }
-    try{
-      final response = await _flashcardService.createFlashcard(wordPair?['term'],wordPair?['definition']);
-      if(response.statusCode == 201){
-        final Map<String,dynamic> data = jsonDecode(response.body);
-        await _createRelationSet_Flashcard(setID, data['id']);
-      }else{
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Flashcard creation failed')),
-        );
-        return;
-      }
-    }catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Flashcard creation failed $e')),
-      );
-    }
-  }
-
-
   List<Map<String, String>> flashcards = [
     {'term': '', 'definition': ''} // Initial empty flashcard
   ];
+
+
+  void initState() {
+    _user = Provider.of<User>(context,listen:false);
+    super.initState();
+  }
+
+  void _createSet() async {
+    if (_setNameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a title for the set.')),
+      );
+      return;
+    }
+
+    if (Flashcard.checkExistanceNullFlashcard(flashcards)) {
+      if (Flashcard.checkDuplication(flashcards)) {
+        try {
+          _set = Set.create(_setNameController.text, cardNumber);
+          final responseSet = await _set.add();
+          if (responseSet.statusCode == 201) {
+            _user.addComponent(_set);
+            for (Map<String, String> flashcard in flashcards) {
+              Flashcard flashcardobj = Flashcard.create(
+                  flashcard['term']!, flashcard['definition']!);
+              final responseFlashcard = await flashcardobj.add();
+              if (responseFlashcard.statusCode == 201) {
+                final responseRelation = await _set.createRelationSet_Flashcard(
+                    flashcardobj);
+                _set.addComponent(flashcardobj);
+
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Flashcard creation failed')),
+                );
+              }
+            }
+            Navigator.pushNamed(
+                context,
+                '/setView');
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('set creation failed')),
+            );
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('set creation failed $e')),
+          );
+        }
+      } else {
+        duplicateIndices = Flashcard.getDuplicateIndices(flashcards);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Duplicate terms are not allowed.')),
+        );
+      }
+    } else {
+      nullTermOrDefinitionIndices =
+          Flashcard.getNullTermOrDefinitionIndices(flashcards);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('All cards must have both term and definition.')),
+      );
+    }
+  }
 
 
   // Function to add a new flashcard
@@ -127,36 +126,7 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
           IconButton(
             icon: const Icon(Icons.save),
             color: Colors.green,
-            onPressed:() async {
-
-              if(_flashcardService.checkExistanceNullFlashcard(flashcards)) {
-                if (_flashcardService.checkDuplication(flashcards)) {
-                  await _createSet();
-
-                  for (Map<String, String> wordPair in flashcards) {
-                    await _createFlashcard(wordPair);
-                  }
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                      const FlashcardViewPage(), // Navigate to FlashcardViewPage
-                    ),
-                  );
-                }else{
-                  duplicateIndices = _flashcardService.getDuplicateIndices(flashcards);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Duplicate terms are not allowed.')),
-                  );
-                }
-              }else{
-                nullTermOrDefinitionIndices = _flashcardService.getNullTermOrDefinitionIndices(flashcards);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('All cards must have both term and definition.')),
-                );
-              }
-            }, // Save the set on button press
+            onPressed:_createSet, // Save the set on button press
           ),
         ],
       ),

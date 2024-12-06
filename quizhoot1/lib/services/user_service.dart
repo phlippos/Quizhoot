@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import 'auth_services.dart';
+
 class UserService {
   static final UserService _instance = UserService._internal();
 
@@ -9,20 +11,16 @@ class UserService {
 
   static UserService get instance => _instance;
 
-  Future<http.Response> update(Map<String,dynamic> credentials, String? token,
-      String baseurl) async {
+  Future<http.Response> update(Map<String,dynamic> credentials) async {
 
-    if (token == null) {
-      throw Exception('No token found, user might not be logged in.');
-    }
     try {
       // Send a POST request with mindfulness data
       final response = await http.post(
-        Uri.parse('${baseurl}/update-mindfulness/'),
+        Uri.parse('${AuthService.instance.baseurl}/update-mindfulness/'),
         headers: {
           'Content-Type': 'application/json',
           'Connection': 'keep-alive',
-          'Authorization': 'Token $token',
+          'Authorization': 'Token ${await AuthService.instance.getToken()}',
         },
         body: jsonEncode(credentials),
       );

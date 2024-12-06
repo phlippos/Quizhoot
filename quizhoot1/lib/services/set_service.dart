@@ -1,36 +1,37 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'auth_services.dart';
+import 'package:quizhoot/services/auth_services.dart';
 
 class SetService{
-  final AuthService _authService = AuthService.instance;
+  static final SetService _instance = SetService._internal();
+
+  // Private constructor
+  SetService._internal();
+
+  // Static getter for the singleton instance
+  static SetService get instance => _instance;
   List<Map<String, dynamic>> data = [];
 
   Future<http.Response> createSet(String setName,int size) async {
-    String? token = await _authService.getToken();
+
     final response = await http.post(
-      Uri.parse('${_authService.baseurl}/sets/add/'),
+      Uri.parse('${AuthService.instance.baseurl}/sets/add/'),
       headers: {'Content-Type': 'application/json',
-                'Authorization' : 'Token ${token}'},
+                'Authorization' : 'Token ${await AuthService.instance.getToken()}'},
       body: jsonEncode({
         'set_name' : setName,
         'size' : size
       }),
     );
 
-    if (response.statusCode == 201) {
-      return response;
-    } else {
-      throw Exception('Failed to create set ${response.statusCode}');
-    }
+    return response;
   }
 
   Future<void> fetchData() async{
-    String? token = await _authService.getToken();
     final response = await http.get(
-      Uri.parse('${_authService.baseurl}/sets/list/'),
+      Uri.parse('${AuthService.instance.baseurl}/sets/list/'),
       headers: {'Content-Type': 'application/json',
-        'Authorization' : 'Token ${token}'},
+        'Authorization' : 'Token ${await AuthService.instance.getToken()}'},
     );
     if(response.statusCode == 200){
       List<dynamic> jsonResponse = json.decode(response.body);

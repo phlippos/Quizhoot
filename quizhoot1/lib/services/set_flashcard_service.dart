@@ -3,17 +3,20 @@ import 'package:http/http.dart' as http;
 import 'auth_services.dart';
 
 class Set_FlashcardService{
-  final AuthService _authService = AuthService.instance;
-  List<Map<String,dynamic>> data = [];
+  static final Set_FlashcardService _instance = Set_FlashcardService._internal();
 
+  // Private constructor
+  Set_FlashcardService._internal();
+
+  // Static getter for the singleton instance
+  static Set_FlashcardService get instance => _instance;
 
   Future<http.Response> createRelationSet_Flashcard(int setID, int flashcardID) async{
-    String? token = await _authService.getToken();
     final response = await http.post(
-      Uri.parse('${_authService.baseurl}/set_flashcards/add/'),
+      Uri.parse('${AuthService.instance.baseurl}/set_flashcards/add/'),
       headers: {
             'Content-Type' : 'application/json',
-            'Authorization': 'Token ${token}'
+            'Authorization': 'Token ${await AuthService.instance.getToken()}'
       },
       body: jsonEncode({
         'set_id': setID,
@@ -21,35 +24,24 @@ class Set_FlashcardService{
       })
     );
 
-    if(response.statusCode == 201){
-      return response;
-    }else{
-      throw Exception('Failed to create Set Flashcard relation ${response.statusCode}');
-    }
+   return response;
   }
 
-  Future<void> fetchData(int setID) async{
-    String? token = await _authService.getToken();
+  Future<http.Response> fetchData(int setID) async{
     final response = await http.get(
-      Uri.parse('${_authService.baseurl}/set_flashcards/list/${setID}/'),
+      Uri.parse('${AuthService.instance.baseurl}/set_flashcards/list/${setID}/'),
       headers : {'Content-Type' : 'application/json',
-        'Authorization' : 'Token ${token}'
+        'Authorization' : 'Token ${await AuthService.instance.getToken()}'
       }
     );
-    if(response.statusCode == 200){
-      List<dynamic> jsonResponse = json.decode(response.body);
-      data= List<Map<String, dynamic>>.from(jsonResponse);
-    }else{
-      throw Exception('Failed to load data');
-    }
+    return response;
   }
 
   Future<http.Response> updateFavStatus(int flashcardID,bool fav) async{
-    String? token = await _authService.getToken();
     final response = await http.put(
-      Uri.parse('${_authService.baseurl}/set_flashcards/update/${flashcardID}/'),
+      Uri.parse('${AuthService.instance.baseurl}/set_flashcards/update/${flashcardID}/'),
       headers: {'Content-Type' : 'application/json',
-        'Authorization' : 'Token ${token}'
+        'Authorization' : 'Token ${await AuthService.instance.getToken()}'
       },
       body: jsonEncode({
         'fav' : fav

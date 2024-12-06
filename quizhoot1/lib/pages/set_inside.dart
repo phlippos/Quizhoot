@@ -1,108 +1,87 @@
 import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:quizhoot/classes/Flashcard.dart';
+import 'package:quizhoot/classes/IComponent.dart';
+import '../classes/User.dart';
+import '../classes/Set.dart';
 import 'quiz_view.dart';
-import '../services/set_flashcard_service.dart';
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
 
 class SetInside extends StatefulWidget {
-  final int? setID; // Set ID can be nullable for the default constructor
-
   // Default constructor (no parameters)
-  const SetInside({super.key}) : setID = null;
+  const SetInside({super.key});
 
-  const SetInside.withSetID({
-    super.key,
-    required this.setID
-  });
 
   @override
   _SetInsideState createState() => _SetInsideState();
 }
 
 class _SetInsideState extends State<SetInside> {
-
-  Set_FlashcardService _set_flashcardService = Set_FlashcardService();
-
   // List of flashcards with terms and their definitions
-  List<Map<String, dynamic>> flashcards = [];
-
+  late List<Flashcard> flashcards = [];
   final FlutterTts _flutterTts =
   FlutterTts(); // Flutter TTS (Text-to-Speech) instance
   List<bool> selectedSets =
   List.filled(3, false); // List to track selected sets
   bool showSetOptions = false; // Boolean to toggle visibility of set options
   bool showDefinitions = false;
-
+  late User _user;
+  late Set _set;
+  bool _isLoaded = false;
 
   @override
-  void initState(){
-    super.initState();
-    _fetchFlashcards();
+  void didChangeDependencies(){
+    super.didChangeDependencies();
+    _set = ModalRoute.of(context)?.settings.arguments as Set;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchFlashcards();
+    });
   }
 
-  Future<void> _fetchFlashcards() async{
-    try{
-      await _set_flashcardService.fetchData(widget.setID!);
-      List<Map<String, dynamic>> fetchedFlashcards = _set_flashcardService.data;
-      setState(() {
-        flashcards = fetchedFlashcards;
-      });
-    }catch (e) {
-      print('Error fetching sets: $e');
-    }
-  }
 
-  void _updateFavStatus(int flashcardID,bool fav) async{
+  Future<void> fetchFlashcards() async{
     try {
-      final response = await _set_flashcardService.updateFavStatus(
-          flashcardID, fav);
-      if(response.statusCode == 200){
-        if(fav) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('added fav list')),
-          );
-        }else{
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('removed from fav list')),
-          );
-        }
-      }else{
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('fav operation failed')),
-        );
-      }
+      await _set.fetchFlashcards();
+      flashcards = _set.components.whereType<Flashcard>().toList();
+
+      setState(() {
+        _isLoaded = true;
+      });
+      return;
     }catch(e){
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('fav creation failed $e')),
-      );
+      setState(() {
+        _isLoaded = true;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Set Inside'),
         backgroundColor:
         const Color(0xFF3A1078), // Custom color for the app bar
       ),
-      body: Column(
+      body: _isLoaded
+          ? Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Expanded(
             child: PageView.builder(
-              itemCount: flashcards.length, // Number of flashcards
+              itemCount: _set.size, // Number of flashcards
               itemBuilder: (context, index) {
-                final flashcard = flashcards[index];
+                final Flashcard flashcard = flashcards[index];
                 return Center(
                   child: FlipCard(
                     // Front and back of the flashcard
                     front: _buildCardFace(
-                        flashcard['term']!, context, true, index),
+                        flashcard.term, context, true, index),
                     back: _buildCardFace(
-                        flashcard['definition']!, context, false, index),
+                        flashcard.definition, context, false, index),
                   ),
                 );
               },
@@ -114,13 +93,13 @@ class _SetInsideState extends State<SetInside> {
             children: [
               _buildNavigationButton(
                 context: context,
-                label: 'Start Quiz',
+                label: _set.size.toString(),
                 targetPage: const QuizView(),
                 onPressed : () {
-                  if(flashcards.length > 4 ) {
+                  if(_set.size > 4 ) {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (context) =>
-                          QuizView.withFlashcards(flashcards: flashcards)),
+                          QuizView()),
                     );
                   }else{
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -153,7 +132,8 @@ class _SetInsideState extends State<SetInside> {
             ),
           ),
         ],
-      ),
+      )
+          : const Center(child: CircularProgressIndicator()),
       backgroundColor: const Color(0xFF3A1078), // Custom background color
     );
   }
@@ -196,17 +176,18 @@ class _SetInsideState extends State<SetInside> {
             right: 10,
             child: IconButton(
               icon: Icon(
-                flashcards[index]['fav'] ? Icons.favorite : Icons.favorite_border,
-                color: flashcards[index]['fav'] ? Colors.red : Colors.grey,
+                flashcards[index].favStatus ? Icons.favorite : Icons.favorite_border,
+                color: flashcards[index].favStatus  ? Colors.red : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
-                  flashcards[index]['fav'] =
-                  !flashcards[index]['fav']; // Toggle the favorite status
-                  _updateFavStatus(flashcards[index]['id'],flashcards[index]['fav']);
+                  flashcards[index].favStatus  =
+                  !flashcards[index].favStatus ; // Toggle the favorite status
+                  // );
+                  flashcards[index].updateFavStatus();
                 });
                 final snackBar = SnackBar(
-                  content: Text(flashcards[index]['fav']
+                  content: Text(flashcards[index].favStatus
                       ? 'Added to favorites'
                       : 'Removed from favorites'), // Show feedback message
                   duration: const Duration(seconds: 1),
@@ -329,14 +310,14 @@ class _SetInsideState extends State<SetInside> {
           .map(
             (entry) => ListTile(
           title: Text(
-            entry.value['term']!,
+            entry.value.term,
             style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Color.fromARGB(221, 5, 5, 5)),
           ),
           subtitle: Text(
-            entry.value['definition']!,
+            entry.value.definition,
             style: const TextStyle(
                 fontSize: 16, color: Color.fromARGB(255, 198, 189, 189)),
           ),
@@ -427,9 +408,9 @@ class _SetInsideState extends State<SetInside> {
 // Opens a dialog to edit a flashcard
   void _editFlashcard(int index) {
     final termController =
-    TextEditingController(text: flashcards[index]['term']);
+    TextEditingController(text: flashcards[index].term);
     final definitionController =
-    TextEditingController(text: flashcards[index]['definition']);
+    TextEditingController(text: flashcards[index].definition);
 
     showDialog(
       context: context,
@@ -459,10 +440,9 @@ class _SetInsideState extends State<SetInside> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  flashcards[index] = {
-                    'term': termController.text,
-                    'definition': definitionController.text,
-                  }; // Update the flashcard
+                  flashcards[index].term =termController.text;
+                  flashcards[index].definition = definitionController.text;
+                  // Update the flashcard
                 });
                 Navigator.of(context).pop(); // Close the dialog
               },

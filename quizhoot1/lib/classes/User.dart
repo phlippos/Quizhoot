@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:quizhoot/services/user_service.dart';
-
 import '../services/auth_services.dart';
 import 'package:http/http.dart' as http;
+import 'IComponent.dart';
 
 class User with ChangeNotifier{
   late String _firstName;
@@ -16,7 +16,7 @@ class User with ChangeNotifier{
   late String _phoneNumber;
   final AuthService _authService = AuthService.instance;
   final UserService _userService = UserService.instance;
-
+  List<IComponent> _components = [];
   // Constructor
 
 
@@ -85,7 +85,7 @@ class User with ChangeNotifier{
   set password(String password) {
     _password = password;
     notifyListeners();
-    update({'password':_password});
+    update({'password':_password}); //update async o yüzden başka çözüm bul
   }
 
   // Getter and Setter for phoneNumber
@@ -96,6 +96,21 @@ class User with ChangeNotifier{
     _phoneNumber = phoneNumber;
     notifyListeners();
     update({'phone_number':_phoneNumber});
+  }
+
+  AuthService get authService{
+    return _authService;
+  }
+
+  List<IComponent> get components{
+    return _components;
+  }
+
+  void addComponent(IComponent component) {
+    if (!_components.contains(component)) {
+      _components.add(component);
+      notifyListeners();
+    }
   }
 
   Future<http.Response> register(String firstName,String lastName,String username,String email,String password,String phoneNumber) async{
@@ -130,8 +145,6 @@ class User with ChangeNotifier{
   Future<bool> update(Map<String,dynamic> credentials) async{
     final response = await _userService.update(
         credentials,
-        await _authService.getToken(),
-        _authService.baseurl
     );
     if (response.statusCode == 200) {
       return true;
