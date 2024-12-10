@@ -211,7 +211,7 @@ class _SetInsideState extends State<SetInside> {
                                                   Navigator.of(context).push(
                                                     MaterialPageRoute(
                                                       builder: (context) =>
-                                                          const WrittenQuizPlaceholder(),
+                                                          const WrittenQuiz(),
                                                     ),
                                                   );
                                                 }
