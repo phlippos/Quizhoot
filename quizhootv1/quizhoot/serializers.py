@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User,Set,Flashcard,Set_Flashcard
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set
 """
     Django'da serialization, Django modellerini (veya queryset'lerini) JSON, XML veya diğer biçimlere dönüştürmeyi sağlar.
     Bu, verilerin web API'leri aracılığıyla dışa aktarılması veya başka sistemlere iletilmesi gibi durumlar için faydalıdır.
@@ -53,5 +53,16 @@ class FlashcardSerializer(serializers.ModelSerializer):
 class Set_FlashcardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Set_Flashcard
+        fields = '__all__'
+        
+        
+class QuizSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Quiz
+        fields = '__all__'
+        
+class Quiz_User_SetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Quiz_User_Set
         fields = '__all__'
          

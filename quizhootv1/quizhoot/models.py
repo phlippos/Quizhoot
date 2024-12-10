@@ -29,6 +29,7 @@ class Set(models.Model):
     rating = models.FloatField(null=True, blank=True, db_column="rating")
     size = models.IntegerField(null=True, blank=True, db_column="size",default = 0)
     flashcards = models.ManyToManyField('Flashcard', through='Set_Flashcard', related_name='sets')
+    
     class Meta:
         db_table = "Set"
 
@@ -47,4 +48,18 @@ class Set_Flashcard(models.Model):
     flashcard_id = models.ForeignKey(Flashcard,on_delete=models.CASCADE,db_column="flashcard_id")
     user_id = models.ForeignKey(User,on_delete=models.CASCADE,db_column="user_id")
     fav = models.BooleanField(db_column="fav_word",default=False)
+    
+    
+    
+class Quiz(models.Model):
+    result = models.FloatField(null=False,db_column="result")
+    correct_answer = models.IntegerField(null=False,db_column="correct_answer")
+    incorrect_answer = models.IntegerField(null=False,db_column="incorrect_answer")
+    quiz_type = models.BooleanField(null=False,db_column="quiz_type")
+    
+    
+class Quiz_User_Set(models.Model):
+    user_id = models.ForeignKey(User,on_delete=models.CASCADE,db_column="user_id")
+    set_id = models.ForeignKey(Set,on_delete=models.CASCADE,db_column="set_id")
+    quiz_id = models.ForeignKey(Quiz,on_delete=models.CASCADE,db_column="quiz_id")
     

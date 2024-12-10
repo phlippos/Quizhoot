@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:quizhoot/services/set_flashcard_service.dart';
 
 class Flashcard implements IComponent {
-  late int _id;
+  int? _id;
   String _term;
   String _definition;
   bool _favStatus = false;
@@ -17,9 +17,9 @@ class Flashcard implements IComponent {
 
   Flashcard.create(this._term, this._definition);
 
-  int get id => _id;
+  int? get id => _id;
 
-  set id(int value) {
+  set id(int? value) {
     _id = value;
   }
 
@@ -73,7 +73,7 @@ class Flashcard implements IComponent {
 
   Future<http.Response> updateFavStatus() async {
     final response = await _set_flashcardService.updateFavStatus(
-        _id, _favStatus);
+        _id!, _favStatus);
     if (response.statusCode == 200) {
       return response;
     } else {
@@ -97,28 +97,22 @@ class Flashcard implements IComponent {
     if (flashcards == null || flashcards.isEmpty) {
       return true;
     }
-
     Set<String> terms = Set<String>();
-
     for (Map<String, String> flashcard in flashcards) {
       String? term = flashcard['term'];
-
       if (term == null) {
         continue;
       }
-
       if (terms.contains(term)) {
         return false;
       }
       terms.add(term);
     }
-
     return true;
   }
 
   static List<int> getNullTermOrDefinitionIndices(List<Map<String, String>> flashcards) {
     List<int> nullIndices = [];
-
     for (int i = 0; i < flashcards.length; i++) {
       String? term = flashcards[i]['term'];
       String? definition = flashcards[i]['definition'];
@@ -127,12 +121,10 @@ class Flashcard implements IComponent {
         nullIndices.add(i);
       }
     }
-
     return nullIndices;
   }
 
   static List<int> getDuplicateIndices(List<Map<String, String>> flashcards) {
-
     Map<String, List<int>> termIndices = {};
     for (int i = 0; i < flashcards.length; i++) {
       String? term = flashcards[i]['term'];
@@ -156,5 +148,24 @@ class Flashcard implements IComponent {
     return duplicateIndices;
   }
 
+  @override
+  Future<bool> update() async{
+    final response = await _service.updateFlashcard(_id!, _term, _definition);
+    if (response.statusCode == 200) {
+      return true; // Return the successful response
+    } else {
+      throw Exception('Failed to update flashcard. Status: ${response.statusCode}');
+    }
+  }
 
+  @override
+  Future<bool> remove() async{
+    final response = await _service.deleteFlashcard(_id!);
+    // If the deletion is successful (HTTP status 204)
+    if (response.statusCode == 204) {
+      return true; // Return the successful response
+    } else {
+      throw Exception('Failed to delete flashcard. Status: ${response.statusCode}');
+    }
+  }
 }

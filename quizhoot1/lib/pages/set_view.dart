@@ -3,8 +3,6 @@ import 'package:provider/provider.dart';
 import '../classes/User.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
-import 'set_inside.dart';
-import "flashcard_creation.dart";
 import '../classes/Set.dart';
 
 class FlashcardViewPage extends StatelessWidget {
@@ -41,9 +39,15 @@ class _SetContentState extends State<SetContent> {
     super.initState();
     _fetchSets(_user);
   }
+
   _deleteSet(int index){
+    _user.components.elementAt(index).remove();
     _user.components.removeAt(index);
+    setState(() {
+      _user.components;
+    });
   }
+
   Future<void> _fetchSets(User user) async {
     try {
       List<Map<String, dynamic>> fetchedSets = await Set.fetchSets();
@@ -102,9 +106,8 @@ class _SetContentState extends State<SetContent> {
           return Column(
             children: [
               SetCard(
-                setName: set.name,
-                termCount: set.size.toString(),
-                createdBy: _user.username,
+                set:set,
+                creator: _user.username,
                 onTap: () {
 
                   Navigator.pushNamed(
@@ -125,17 +128,15 @@ class _SetContentState extends State<SetContent> {
 }
 
 class SetCard extends StatelessWidget {
-  final String setName;
-  final String termCount;
-  final String createdBy;
+  final Set set;
+  final String creator;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 
   const SetCard({
     super.key,
-    required this.setName,
-    required this.termCount,
-    required this.createdBy,
+    required this.set,
+    required this.creator,
     required this.onTap,
     required this.onDelete,
   });
@@ -167,19 +168,18 @@ class SetCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    setName,
+                    set.name,
                     style: const TextStyle(
                         fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateFlashcardPage(),
-                      ),
+                  onPressed: () async{
+                    Navigator.pushNamed(
+                        context,
+                        '/flashcardUpdate',
+                        arguments: set
                     );
                   },
                 ),
@@ -194,7 +194,7 @@ class SetCard extends StatelessWidget {
               children: [
                 const Icon(Icons.workspaces, size: 20), // Terim sayısı ikonu
                 const SizedBox(width: 5),
-                Text(termCount), // Terim sayısı
+                Text(set.size.toString()), // Terim sayısı
               ],
             ),
             const SizedBox(height: 4),
@@ -202,7 +202,7 @@ class SetCard extends StatelessWidget {
               children: [
                 const Icon(Icons.account_circle, size: 20), // Creator ikonu
                 const SizedBox(width: 5),
-                Text(createdBy), // Oluşturan kişi adı
+                Text(creator), // Oluşturan kişi adı
               ],
             ),
           ],

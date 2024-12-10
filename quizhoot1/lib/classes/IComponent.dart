@@ -4,8 +4,8 @@ abstract class IComponent {
 
   Future<http.Response> add();
 
-  //Future<bool> update();
+  Future<bool> update();
 
-  //Future<bool> remove();
+  Future<bool> remove();
 
 }

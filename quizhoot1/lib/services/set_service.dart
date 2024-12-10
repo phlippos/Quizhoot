@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:quizhoot/services/auth_services.dart';
+import 'package:quizhoot/services/base_service.dart';
 
-class SetService{
+class SetService extends BaseService{
   static final SetService _instance = SetService._internal();
 
   // Private constructor
@@ -15,7 +16,7 @@ class SetService{
   Future<http.Response> createSet(String setName,int size) async {
 
     final response = await http.post(
-      Uri.parse('${AuthService.instance.baseurl}/sets/add/'),
+      Uri.parse(getLink('add-set')!),
       headers: {'Content-Type': 'application/json',
                 'Authorization' : 'Token ${await AuthService.instance.getToken()}'},
       body: jsonEncode({
@@ -29,7 +30,7 @@ class SetService{
 
   Future<void> fetchData() async{
     final response = await http.get(
-      Uri.parse('${AuthService.instance.baseurl}/sets/list/'),
+      Uri.parse(getLink('list-sets')!),
       headers: {'Content-Type': 'application/json',
         'Authorization' : 'Token ${await AuthService.instance.getToken()}'},
     );
@@ -40,5 +41,33 @@ class SetService{
       throw Exception('Failed to load data');
     }
   }
+
+  Future<http.Response> deleteSet(int setID) async {
+
+    final response = await http.delete(
+      Uri.parse(getLink('delete-set',{'<int:pk>':'$setID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization' : 'Token ${await AuthService.instance.getToken()}',
+      },
+    );
+    return response;
+  }
+  Future<http.Response> updateSet(int setID, String setName, int size) async {
+    final response = await http.put(
+      Uri.parse(getLink('update-set',{'<int:pk>':'$setID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization' : 'Token ${await AuthService.instance.getToken()}'
+      },
+      body: jsonEncode({
+        'set_name': setName,
+        'size': size,
+      }),
+    );
+    return response;
+  }
+
+
 
 }

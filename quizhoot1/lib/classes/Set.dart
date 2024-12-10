@@ -1,16 +1,19 @@
 import 'dart:convert';
 
 import 'package:quizhoot/classes/IComponent.dart';
+import 'package:quizhoot/classes/Quiz.dart';
 import 'package:quizhoot/services/set_flashcard_service.dart';
 import 'package:quizhoot/services/set_service.dart';
 import 'package:http/http.dart' as http;
-
 import 'Flashcard.dart';
+
 class Set implements IComponent{
   late int _id;
   String _name;
   int _size;
   List<IComponent> _components = [];
+  Quiz _quiz = Quiz(0.0,0,0,false);
+
   static SetService _service = SetService.instance;
   static Set_FlashcardService _set_flashcardService = Set_FlashcardService.instance;
   Set.create(this._name,this._size);
@@ -20,18 +23,21 @@ class Set implements IComponent{
 
   set name(String value) {
     _name = value;
+    update();
   }
 
   int get size => _size;
 
   set size(int value) {
     _size = value;
+    update();
   }
 
   List<IComponent> get components => _components;
 
   set components(List<IComponent> value) {
     _components = value;
+    _size = _components.length;
   }
 
   static SetService get service => _service;
@@ -40,7 +46,13 @@ class Set implements IComponent{
 
   set id(int value) {
     _id = value;
-  } //String _description;
+  }
+
+  Quiz get quiz => _quiz;
+
+  set quiz(Quiz value) {
+    _quiz = value;
+  }
 
   @override
   bool operator ==(Object other) {
@@ -61,15 +73,20 @@ class Set implements IComponent{
     }
   }
 
-  @override
   static Future<List<Map<String, dynamic>>> fetchSets() async{
-    final response = await _service.fetchData();
+    await _service.fetchData();
     return _service.data;
   }
 
-  void addComponent(IComponent component) {
+  void addComponent(IComponent component) async{
     if (!_components.contains(component)) {
       _components.add(component);
+    }
+  }
+
+  void removeComponent(IComponent component){
+    if (_components.contains(component)) {
+      _components.remove(component);
     }
   }
 
@@ -85,13 +102,32 @@ class Set implements IComponent{
     }
   }
 
-
   Future<void> createRelationSet_Flashcard(Flashcard flashcard) async{
     final response = await _set_flashcardService.createRelationSet_Flashcard(_id, flashcard.id);
     if(response.statusCode == 201){
       return;
     }else{
       throw Exception('Failed to create Set Flashcard relation ${response.statusCode}');
+    }
+  }
+
+  @override
+  Future<bool> update() async{
+    final response = await _service.updateSet(_id, _name, _size);
+    if (response.statusCode == 200) {
+      return true; // Successfully updated the set
+    } else {
+      throw Exception('Failed to update set. Status: ${response.statusCode}');
+    }
+  }
+
+  @override
+  Future<bool> remove() async{
+    final response = await _service.deleteSet(_id);
+    if (response.statusCode == 204) {
+      return true; // Successfully deleted the set
+    } else {
+      throw Exception('Failed to delete set. Status: ${response.statusCode}');
     }
   }
 

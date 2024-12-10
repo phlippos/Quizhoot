@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import connection
 from rest_framework import status
-from .models import User,Set,Flashcard,Set_Flashcard
-from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set
+from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -66,10 +66,17 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'access_token': token.key,'user':serializer.data},status = 200)
         return Response({'error': 'Invalid credentials'}, status=400)
     
+    
+    
+class UserProfileViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+    
     @action(detail=True, methods=['put'], url_path='update')
-    def update_user(self, request,user_id = None):
+    def update_user(self, request):
         try:
-            user = User.objects.get(id = user_id)
+            user = User.objects.get(username = request.user.username)
         except User.DoesNotExist:
             return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(user, data=request.data, partial=True)
@@ -77,28 +84,6 @@ class UserViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-class UserProfileViewSet(viewsets.ModelViewSet):
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserSerializer
-    
-    def set_mindfulness(self,request):
-        try:
-            user = User.objects.get(username = request.user.username)
-            mindfulness =  request.data.get("mindfulness")
-            user.mindfulness = mindfulness
-            
-            user.save()
-                          
-            return Response({"statsus": "success", "message" : "updated"},status = status.HTTP_200_OK)
-        
-        except User.DoesNotExist:
-        # Handle case where user does not exist
-            return Response({"status": "error", "message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            # Catch any other exceptions
-            return Response({"status": "error", "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
         
 class SetViewSet(viewsets.ModelViewSet):
@@ -132,18 +117,18 @@ class SetViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['delete'], url_path='delete')
-    def delete_set(self, request, ID=None):
+    def delete_set(self, request, pk=None):
         try:
-            set_instance = Set.objects.get(ID=ID)  # Use ID instead of pk
+            set_instance = Set.objects.get(pk=pk)  # Use ID instead of pk
             set_instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Set.DoesNotExist:
             return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['put'], url_path='update')
-    def update_set(self, request, ID=None):
+    def update_set(self, request, pk=None):
         try:
-            set_instance = Set.objects.get(ID=ID)  # Use ID instead of pk
+            set_instance = Set.objects.get(pk=pk)  # Use ID instead of pk
         except Set.DoesNotExist:
             return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
         
@@ -157,7 +142,7 @@ class SetViewSet(viewsets.ModelViewSet):
 class FlashcardViewSet(viewsets.ModelViewSet):
     serializer_class = FlashcardSerializer
     authentication_classes = [TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     queryset = Flashcard.objects.all() 
 
     @action(detail=False, methods=['post'], url_path='add')
@@ -202,15 +187,14 @@ class FlashcardViewSet(viewsets.ModelViewSet):
 
 
 class Set_FlashcardViewSet(viewsets.ModelViewSet):
-    serializer_class = FlashcardSerializer
     authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = Set_FlashcardSerializer
     queryset = Set_Flashcard.objects.all()
     
     @action(detail=False, methods=['post'], url_path='add')
     def add_set_flashcard(self, request):
         user_id = User.get_user_id(request.user.username)
-        print(request.user.username)
         serializer = self.get_serializer(data={
             'set_id' : request.data.get('set_id'),
             'flashcard_id' : request.data.get('flashcard_id'),
@@ -263,3 +247,68 @@ class Set_FlashcardViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class QuizUserSetService:
+    @staticmethod
+    def add_quiz_user_set(set_id, user_id, quiz_id):
+        data = {
+            'set_id': set_id,
+            'user_id': user_id,
+            'quiz_id': quiz_id
+        }
+        serializer = Quiz_User_SetSerializer(data=data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return True, serializer.data
+        return False, serializer.errors
+    
+    @staticmethod
+    def list_quiz_user_set(user_id,set_id):
+        try:
+            quiz_user_set = Quiz_User_Set.objects.get(user_id=user_id, set_id=set_id)
+            return quiz_user_set.quiz_id
+        except Quiz_User_Set.DoesNotExist:
+            return None
+        
+    
+class QuizViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = QuizSerializer
+    queryset = Quiz.objects.all()
+    
+        
+    def add_quiz(self,request,set_id = None):
+        user_id = User.get_user_id(request.user.username)
+        quiz = QuizUserSetService.list_quiz_user_set(user_id,set_id)
+        
+        if quiz == None : 
+            serializer = self.get_serializer(data = request.data)
+            if serializer.is_valid():
+                quiz_instance = serializer.save()
+                quiz_id = quiz_instance.id
+                success, response_data = QuizUserSetService.add_quiz_user_set(set_id = set_id,user_id=user_id,quiz_id = quiz_id)
+                if success:
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else :
+                    quiz_instance.delete()
+                    return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
+        else : 
+            print(quiz.id)
+            serializer = self.get_serializer(quiz,data=request.data,partial=True)
+            if serializer.is_valid():
+                print(request.data.get('correct_answer'))
+                serializer.save()
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def list_quiz(self,request,set_id = None):
+        user_id = User.get_user_id(request.user.username)
+        quiz = QuizUserSetService.list_quiz_user_set(user_id,set_id)
+        if quiz != None:
+            serializer = self.get_serializer(quiz)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(serializer.errors,status=status.HTTP_404_NOT_FOUND)
+            
+        

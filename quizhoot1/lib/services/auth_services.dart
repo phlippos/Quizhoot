@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:quizhoot/services/base_service.dart';
 import 'secure_storage_service.dart';
 
 
-class AuthService {
+class AuthService extends BaseService{
   static final AuthService _instance = AuthService._internal();
 
   // Private constructor
@@ -13,11 +14,11 @@ class AuthService {
   static AuthService get instance => _instance;
 
   final SecureStorageService _secureStorageService = SecureStorageService();
-  final String baseurl = 'http://10.0.2.2:8000/api';
+
 
   Future<http.Response> register(String firstName, String lastName,String username, String email,String phoneNumber, String password) async {
     final response = await http.post(
-      Uri.parse('${baseurl}/users/create/'),
+      Uri.parse(getLink('user-create')!),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'first_name' : firstName,
@@ -35,7 +36,7 @@ class AuthService {
 
   Future<http.Response> login(String username, String password) async{
     final response = await http.post(
-      Uri.parse('${baseurl}/login/'),
+      Uri.parse(getLink('user-login')!),
       headers: {'Content-Type' : 'application/json'},
       body: jsonEncode({
         'username' : username,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:quizhoot/pages/flashcard_update.dart';
 import 'package:quizhoot/pages/onboarding.dart';
 import 'pages/pages.dart';
 import 'classes/User.dart';
@@ -32,6 +33,9 @@ class QuizHoot extends StatelessWidget {
         '/signup': (context) => SignUpPage(),
         '/setView': (context) => FlashcardViewPage(),
         '/setInside': (context) => SetInside(),
+        '/flashcardUpdate': (context) => UpdateFlashcardPage(),
+        '/multipleChoiceQuiz': (context) => QuizView(),
+        '/WrittenQuiz': (context) => WrittenQuizPlaceholder()
       },
     );
   }

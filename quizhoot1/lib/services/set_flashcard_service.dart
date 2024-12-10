@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:quizhoot/services/base_service.dart';
 import 'auth_services.dart';
 
-class Set_FlashcardService{
+class Set_FlashcardService extends BaseService{
   static final Set_FlashcardService _instance = Set_FlashcardService._internal();
 
   // Private constructor
@@ -11,9 +12,9 @@ class Set_FlashcardService{
   // Static getter for the singleton instance
   static Set_FlashcardService get instance => _instance;
 
-  Future<http.Response> createRelationSet_Flashcard(int setID, int flashcardID) async{
+  Future<http.Response> createRelationSet_Flashcard(int setID, int? flashcardID) async{
     final response = await http.post(
-      Uri.parse('${AuthService.instance.baseurl}/set_flashcards/add/'),
+      Uri.parse(getLink('add-set-flashcard')!),
       headers: {
             'Content-Type' : 'application/json',
             'Authorization': 'Token ${await AuthService.instance.getToken()}'
@@ -29,7 +30,7 @@ class Set_FlashcardService{
 
   Future<http.Response> fetchData(int setID) async{
     final response = await http.get(
-      Uri.parse('${AuthService.instance.baseurl}/set_flashcards/list/${setID}/'),
+      Uri.parse(getLink('list-set-flashcards',{'<int:set_id>':'$setID'})!),
       headers : {'Content-Type' : 'application/json',
         'Authorization' : 'Token ${await AuthService.instance.getToken()}'
       }
@@ -39,7 +40,7 @@ class Set_FlashcardService{
 
   Future<http.Response> updateFavStatus(int flashcardID,bool fav) async{
     final response = await http.put(
-      Uri.parse('${AuthService.instance.baseurl}/set_flashcards/update/${flashcardID}/'),
+      Uri.parse(getLink('update-set-flashcard',{'<int:flashcard_id>':'$flashcardID'})!),
       headers: {'Content-Type' : 'application/json',
         'Authorization' : 'Token ${await AuthService.instance.getToken()}'
       },

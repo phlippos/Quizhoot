@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:quizhoot/services/base_service.dart';
 
 import 'auth_services.dart';
 
-class UserService {
+class UserService extends BaseService{
   static final UserService _instance = UserService._internal();
 
 
@@ -16,7 +17,7 @@ class UserService {
     try {
       // Send a POST request with mindfulness data
       final response = await http.post(
-        Uri.parse('${AuthService.instance.baseurl}/update-mindfulness/'),
+        Uri.parse(getLink('user-update')!),
         headers: {
           'Content-Type': 'application/json',
           'Connection': 'keep-alive',
