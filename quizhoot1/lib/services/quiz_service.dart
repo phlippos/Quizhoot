@@ -15,27 +15,45 @@ class QuizService extends BaseService{
   // Static getter for the singleton instance
   static QuizService get instance => _instance;
 
-  List<Map<String, dynamic>> generateQuestionListMC(List<Flashcard> flashcards, {bool onlyFavorites = false}) {
-
-    List<Flashcard> filteredFlashcards = onlyFavorites ? flashcards.where((fc) => fc.favStatus).toList() : flashcards;
+  List<Map<String, dynamic>> generateQuestionListMC(List<Flashcard> flashcards, String type, {bool onlyFavorites = false}) {
+    List<Flashcard> filteredFlashcards = checkOnlyFavorites(flashcards, onlyFavorites);
     List definitions = filteredFlashcards.map((fc) => fc.definition).toList();
     List<Map<String, dynamic>> questions = [];
+    if(type == 'written'){
+      for(var flashcard in filteredFlashcards){
+        questions.add({
+          'question': flashcard.term,
+          'answer': flashcard.definition
+        });
+      }
+    }else{
+      for (var flashcard in filteredFlashcards) {
+        String correctDefinition = flashcard.definition;
+        List incorrectDefinitions = definitions.where((def) => def != correctDefinition).toList();
+        incorrectDefinitions.shuffle();
 
-    for (var flashcard in filteredFlashcards) {
-      String correctDefinition = flashcard.definition;
-      List incorrectDefinitions = definitions.where((def) => def != correctDefinition).toList();
-      incorrectDefinitions.shuffle();
+        List<String> options = [correctDefinition, incorrectDefinitions[0], incorrectDefinitions[1], incorrectDefinitions[2]];
+        options.shuffle();
 
-      List<String> options = [correctDefinition, incorrectDefinitions[0], incorrectDefinitions[1], incorrectDefinitions[2]];
-      options.shuffle();
-
-      questions.add({
-        'question': flashcard.term,
-        'options': options,
-        'answer': correctDefinition,
-      });
+        questions.add({
+          'question': flashcard.term,
+          'options': options,
+          'answer': correctDefinition,
+        });
+      }
     }
+    questions.shuffle();
     return questions;
+  }
+
+  List<Flashcard> checkOnlyFavorites(List<Flashcard> flashcards, bool onlyFavorites){
+    return onlyFavorites ? getFavoriteFlashcards(flashcards) : flashcards;
+  }
+  List<Flashcard> getFavoriteFlashcards(List<Flashcard> flashcards){
+    return flashcards.where((fc) => fc.favStatus).toList();
+  }
+  List<String> getAnswerKey(List<Map<String,dynamic>> questions){
+    return questions.map((element) => element['answer'].toString()).toList();
   }
 
   Future<http.Response> add_quiz(int set_id,double result,int correct_answer,int incorrect_answer, bool type) async{

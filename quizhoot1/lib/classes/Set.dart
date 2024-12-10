@@ -13,6 +13,13 @@ class Set implements IComponent{
   int _size;
   List<IComponent> _components = [];
   Quiz _quiz = Quiz(0.0,0,0,false);
+  late int _favFlashcardNum;
+
+
+  int get favFlashcardNum {
+    calculateFavFlashcardNum();
+    return _favFlashcardNum;
+  }
 
   static SetService _service = SetService.instance;
   static Set_FlashcardService _set_flashcardService = Set_FlashcardService.instance;
@@ -129,6 +136,10 @@ class Set implements IComponent{
     } else {
       throw Exception('Failed to delete set. Status: ${response.statusCode}');
     }
+  }
+
+  void calculateFavFlashcardNum(){
+    _favFlashcardNum = components.whereType<Flashcard>().where((fc) => fc.favStatus).toList().length;
   }
 
 }
