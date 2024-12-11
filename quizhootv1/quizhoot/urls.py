@@ -33,7 +33,7 @@ urlpatterns = [
     path('set_flashcards/list/<int:set_id>/', Set_FlashcardViewSet.as_view({'get': 'list_set_flashcards'}), name='list_set_flashcards'),
     path('set_flashcards/add/', Set_FlashcardViewSet.as_view({'post': 'add_set_flashcard'}), name='add_set_flashcard'),
     path('set_flashcards/delete/<int:flashcard_id>/', Set_FlashcardViewSet.as_view({'delete': 'delete_set_flashcard'}), name='delete_set_flashcard'),
-    path('set_flashcards/update/<int:flashcard_id>/', Set_FlashcardViewSet.as_view({'put': 'update_set_flashcard'}), name='update_set_flashcard'),
+    path('set_flashcards/update/<int:flashcard_id>/<int:set_id>/', Set_FlashcardViewSet.as_view({'put': 'update_set_flashcard'}), name='update_set_flashcard'),
     
     #Quiz
     path('quiz/add/<int:set_id>/',QuizViewSet.as_view({'post': 'add_quiz'}),name='add_quiz'),

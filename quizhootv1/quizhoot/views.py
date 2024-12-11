@@ -236,10 +236,10 @@ class Set_FlashcardViewSet(viewsets.ModelViewSet):
             return Response({"error": "Set_Flashcard not found"}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['put'], url_path='update')
-    def update_set_flashcard(self, request, flashcard_id = None):
+    def update_set_flashcard(self, request, flashcard_id = None, set_id = None):
         user_id = User.get_user_id(request.user.username)
         try:
-            set_flashcard = Set_Flashcard.objects.get(flashcard_id = flashcard_id,user_id=user_id)
+            set_flashcard = Set_Flashcard.objects.get(flashcard_id = flashcard_id, user_id=user_id, set_id = set_id)
         except Set_Flashcard.DoesNotExist:
             return Response({"error": "Set_Flashcard not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = self.get_serializer(set_flashcard, data=request.data, partial=True)
