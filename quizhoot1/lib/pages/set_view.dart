@@ -60,7 +60,6 @@ class _SetContentState extends State<SetContent> {
       });
     } catch (e) {
       print('Error fetching sets: $e');
-
     }
   }
 
@@ -68,7 +67,7 @@ class _SetContentState extends State<SetContent> {
   Widget build(BuildContext context) {
     return Center(
       child: _isLoading
-          ? Column(
+          ? const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
@@ -79,12 +78,12 @@ class _SetContentState extends State<SetContent> {
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 CircularProgressIndicator(),
               ],
             )
           : _user.components.isEmpty
-          ? Column(
+          ? const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
@@ -95,13 +94,13 @@ class _SetContentState extends State<SetContent> {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           CircularProgressIndicator(),
         ],
       )
           : Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: _user.components.whereType<Set>().toList().map((set) {
+        children: _user.getSets().map((set) {
 
           return Column(
             children: [

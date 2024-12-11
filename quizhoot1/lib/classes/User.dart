@@ -4,6 +4,7 @@ import 'package:quizhoot/services/user_service.dart';
 import '../services/auth_services.dart';
 import 'package:http/http.dart' as http;
 import 'IComponent.dart';
+import 'Set.dart';
 
 class User with ChangeNotifier{
   late String _firstName;
@@ -111,6 +112,10 @@ class User with ChangeNotifier{
       _components.add(component);
       notifyListeners();
     }
+  }
+
+  List<Set> getSets(){
+    return _components.whereType<Set>().toList();
   }
 
   Future<http.Response> register(String firstName,String lastName,String username,String email,String password,String phoneNumber) async{

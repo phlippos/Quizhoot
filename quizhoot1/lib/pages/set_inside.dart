@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:provider/provider.dart';
 import 'package:quizhoot/classes/Flashcard.dart';
 import '../classes/Set.dart';
 import 'package:quizhoot/pages/quiz_creation.dart';
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
 import 'package:another_flushbar/flushbar.dart';
+import '../classes/User.dart';
 
 class SetInside extends StatefulWidget {
   // Default constructor (no parameters)
@@ -22,17 +24,22 @@ class _SetInsideState extends State<SetInside> {
   late List<Flashcard> flashcards = [];
   final FlutterTts _flutterTts =
   FlutterTts(); // Flutter TTS (Text-to-Speech) instance
-  List<bool> selectedSets =
-  List.filled(3, false); // List to track selected sets
+  late List<bool> _selectedSets; // List to track selected sets
+  late Flashcard _selectedFlashcard;
   bool showSetOptions = false; // Boolean to toggle visibility of set options
   bool showDefinitions = false;
+  late User _user;
   late Set _set;
   bool _isLoaded = false;
+  late List<Set> _sets;
 
   @override
   void didChangeDependencies(){
     if(_isLoaded == false) {
       super.didChangeDependencies();
+      _user = Provider.of<User>(context,listen:false);
+      _sets = _user.getSets();
+      _selectedSets = List.filled(_user.components.length, false);
       _set = ModalRoute
           .of(context)
           ?.settings
@@ -253,17 +260,7 @@ class _SetInsideState extends State<SetInside> {
       message = quizType == 'test'
           ? "min required number of term is 4 for this quiz type. min 4 flashcard must be fav"
           : "min required number of term is 1 for this quiz type. min 1 flashcard must be fav";
-
-      Flushbar(
-        message: message,
-        icon: Icon(
-          Icons.info_outline,
-          size: 28.0,
-          color: Colors.blue[300],
-        ),
-        duration: Duration(seconds: 3),
-        leftBarIndicatorColor: Colors.blue[300],
-      ).show(context);
+      _showFlushbar(message,  Icons.info_outline, Colors.blue[300]!);
     }
   }
 
@@ -313,7 +310,7 @@ class _SetInsideState extends State<SetInside> {
                   flashcards[index].favStatus  =
                   !flashcards[index].favStatus ; // Toggle the favorite status
                   // );
-                  flashcards[index].updateFavStatus();
+                  flashcards[index].updateFavStatus(_set.id);
                 });
                 final snackBar = SnackBar(
                   content: Text(flashcards[index].favStatus
@@ -334,6 +331,7 @@ class _SetInsideState extends State<SetInside> {
                   size: 30, color: Color(0xFF3A1078)),
               onPressed: () {
                 setState(() {
+                  _selectedFlashcard = flashcards[index];
                   showSetOptions =
                   !showSetOptions; // Toggle visibility of set options
                 });
@@ -360,53 +358,44 @@ class _SetInsideState extends State<SetInside> {
     if (!showSetOptions)
       return Container(); // Hide the set options if the toggle is off
 
-    bool anySelected = selectedSets
+    bool anySelected = _selectedSets
         .any((selected) => selected); // Check if any set is selected
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: Column(
-        children: [
-          const Text(
-            'Choose a Set:',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          ...List.generate(3, (index) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Set ${index + 1}'), // Display set number
-                Checkbox(
-                  value: selectedSets[index],
-                  onChanged: (bool? value) {
-                    setState(() {
-                      selectedSets[index] =
-                          value ?? false; // Update the selected set
-                    });
-                  },
-                ),
-              ],
-            );
-          }),
+        padding: const EdgeInsets.all(16),
+        color: Colors.white,
+        child: Column(
+            children: [
+              const Text(
+                'Choose a Set:',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Column(
+                children: _sets.where((set) => set != _set).map((set) {
+                  int index = _user.components.indexOf(set);
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(set.name), // Display set name
+                      Checkbox(
+                        value: _selectedSets[index],
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _selectedSets[index] = value ?? false; // Update the selected set
+                          });
+                        },
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
           const SizedBox(height: 10),
           if (anySelected) // Only show the "Add" button if any set is selected
             ElevatedButton(
               onPressed: () {
                 // Handle adding selected sets
-                String addedSets = selectedSets
-                    .asMap()
-                    .entries
-                    .where((entry) => entry.value)
-                    .map((entry) => 'Set ${entry.key + 1}')
-                    .join(', ');
-                final snackBar = SnackBar(
-                  content: Text(
-                      '$addedSets added to your sets'), // Feedback message for added sets
-                  duration: const Duration(seconds: 1),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                addFlashcardToSets();
                 setState(() {
                   showSetOptions = false; // Hide set options after adding
                 });
@@ -419,6 +408,57 @@ class _SetInsideState extends State<SetInside> {
       ),
     );
   }
+
+  void addFlashcardToSets() async {
+    for (int i = 0; i < _selectedSets.length; i++) {
+      if (_selectedSets[i] == true) {
+        try {
+          bool isAdded = _sets[i].addComponent(Flashcard(
+            _selectedFlashcard.id,
+            _selectedFlashcard.term,
+            _selectedFlashcard.definition,
+            _selectedFlashcard.favStatus,
+          ));
+
+          if (isAdded) {
+            _sets[i].sizeRefresh();
+            await _sets[i].createRelationSet_Flashcard(_selectedFlashcard);
+            _showFlushbar(
+              'The Flashcard added to your Set ${_sets[i].name}',
+              Icons.info_outline,
+              Colors.blue[300]!,
+            );
+          } else {
+            _showFlushbar(
+              'The Set ${_sets[i].name} already contains this flashcard',
+              Icons.info_outline,
+              Colors.blue[300]!,
+            );
+          }
+        } catch (e) {
+          _showFlushbar(
+            '$e',
+            Icons.error_outline,
+            Colors.red[300]!,
+          );
+        }
+      }
+    }
+  }
+
+  void _showFlushbar(String message, IconData icon, Color iconColor) {
+    Flushbar(
+      message: message,
+      icon: Icon(
+        icon,
+        size: 28.0,
+        color: iconColor,
+      ),
+      duration: const Duration(seconds: 3),
+      leftBarIndicatorColor: iconColor,
+    ).show(context);
+  }
+  
 
   // Method to trigger text-to-speech for a given text
   Future<void> _speak(String text) async {

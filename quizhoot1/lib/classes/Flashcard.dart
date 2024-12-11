@@ -58,9 +58,10 @@ class Flashcard implements IComponent {
     if (identical(this, other)) return true; // Check for same instance
     if (other is! Flashcard) return false; // Check for same type
 
-    return other._id == _id;
+    return other._id == _id || other.term == _term;
   }
 
+  @override
   Future<http.Response> add() async {
     final response = await _service.createFlashcard(_term, _definition);
     if (response.statusCode == 201) {
@@ -71,9 +72,9 @@ class Flashcard implements IComponent {
     }
   }
 
-  Future<http.Response> updateFavStatus() async {
+  Future<http.Response> updateFavStatus(int set_id) async {
     final response = await _set_flashcardService.updateFavStatus(
-        _id!, _favStatus);
+        _id!,set_id, _favStatus);
     if (response.statusCode == 200) {
       return response;
     } else {

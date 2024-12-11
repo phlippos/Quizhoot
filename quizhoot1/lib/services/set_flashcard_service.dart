@@ -38,9 +38,9 @@ class Set_FlashcardService extends BaseService{
     return response;
   }
 
-  Future<http.Response> updateFavStatus(int flashcardID,bool fav) async{
+  Future<http.Response> updateFavStatus(int flashcardID,int set_id,bool fav) async{
     final response = await http.put(
-      Uri.parse(getLink('update-set-flashcard',{'<int:flashcard_id>':'$flashcardID'})!),
+      Uri.parse(getLink('update-set-flashcard',{'<int:flashcard_id>':'$flashcardID','<int:set_id>':'$set_id'})!),
       headers: {'Content-Type' : 'application/json',
         'Authorization' : 'Token ${await AuthService.instance.getToken()}'
       },

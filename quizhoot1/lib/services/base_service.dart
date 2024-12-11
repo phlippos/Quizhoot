@@ -32,7 +32,7 @@ abstract class BaseService {
     'list-set-flashcards': 'set_flashcards/list/<int:set_id>/',
     'add-set-flashcard': 'set_flashcards/add/',
     'delete-set-flashcard': 'set_flashcards/delete/<int:flashcard_id>/',
-    'update-set-flashcard': 'set_flashcards/update/<int:flashcard_id>/',
+    'update-set-flashcard': 'set_flashcards/update/<int:flashcard_id>/<int:set_id>/',
 
     // Quiz routes
     'add-quiz': 'quiz/add/<int:set_id>/',

@@ -44,7 +44,7 @@ class Set implements IComponent{
 
   set components(List<IComponent> value) {
     _components = value;
-    _size = _components.length;
+    sizeRefresh();
   }
 
   static SetService get service => _service;
@@ -85,16 +85,22 @@ class Set implements IComponent{
     return _service.data;
   }
 
-  void addComponent(IComponent component) async{
+  bool addComponent(IComponent component){
     if (!_components.contains(component)) {
       _components.add(component);
+      return true;
     }
+    return false;
   }
 
   void removeComponent(IComponent component){
     if (_components.contains(component)) {
       _components.remove(component);
     }
+  }
+
+  void sizeRefresh(){
+    size = components.length;
   }
 
   Future<void> fetchFlashcards() async{
