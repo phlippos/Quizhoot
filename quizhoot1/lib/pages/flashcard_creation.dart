@@ -57,7 +57,9 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
   Future<void> _createSet() async {
     if (setTitle.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
+
         const SnackBar(content: Text('Please enter a title for the set.')),
+
       );
       return;
     }
@@ -69,10 +71,12 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
         setID = data['id'];
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Flashcard set created successfully!')),
+
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Set creation failed')),
+
         );
       }
     } catch (e) {
@@ -134,8 +138,10 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
     for (var card in flashcards) {
       if (card['term']!.isEmpty || card['definition']!.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
+
           const SnackBar(
               content: Text('All cards must have both term and definition.')),
+
         );
         return;
       }
@@ -166,6 +172,12 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
     );
   }
 
+  // Function to delete a flashcard
+  void deleteFlashcard(int index) {
+    setState(() {
+      flashcards.removeAt(index);
+    });
+  }
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -182,7 +194,9 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
           IconButton(
             icon: const Icon(Icons.save),
             color: Colors.green,
+
             onPressed: saveSet, // Save the set on button press
+
           ),
         ],
       ),

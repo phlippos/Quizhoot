@@ -21,9 +21,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   // Function to handle bottom navigation item tap events
-  void _onItemTapped(int index) {
-    setState(() {});
-  }
 
   // Function to show add options as a bottom sheet
   void _showAddOptions(BuildContext context) {

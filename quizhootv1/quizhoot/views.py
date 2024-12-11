@@ -67,13 +67,13 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'error': 'Invalid credentials'}, status=400)
     
     
+    
 class UserProfileViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
     
     def set_mindfulness(self,request):
-        print(request.user.email)
         try:
             user = User.objects.get(username = request.user.username)
             mindfulness =  request.data.get("mindfulness")
@@ -101,8 +101,7 @@ class SetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='list')
     def list_sets(self, request):
-        user = User.objects.get(username = request.user.username)
-        user_id = user.id
+        user_id = User.get_user_id(request.user.username)
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         sets = Set.objects.filter(user_id=user_id)
@@ -111,12 +110,11 @@ class SetViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='add')
     def add_set(self, request):
-        user = User.objects.get(username = request.user.username)
-        user_id = user.id
+        user_id = User.get_user_id(request.user.username)
         if not user_id:
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        serializer = SetSerializer(data={'user_id':user_id,'set_name':request.data['set_name']})
+        serializer = SetSerializer(data={'user_id':user_id,'set_name':request.data['set_name'],'size': request.data.get('size')})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -153,7 +151,6 @@ class FlashcardViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='add')
     def add_flashcard(self, request):
-        user = request.user
         data = request.data
         serializer = self.get_serializer(data={
             'term': data['term'],
@@ -167,7 +164,6 @@ class FlashcardViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='list')
     def list_flashcards(self, request):
-        user = request.user
         flashcards = self.get_queryset() # Assuming flashcards belong to sets
         serializer = self.get_serializer(flashcards, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -195,16 +191,20 @@ class FlashcardViewSet(viewsets.ModelViewSet):
 
 
 class Set_FlashcardViewSet(viewsets.ModelViewSet):
+    serializer_class = FlashcardSerializer
+    authentication_classes = [TokenAuthentication]
     serializer_class = Set_FlashcardSerializer
     queryset = Set_Flashcard.objects.all()
+    
     @action(detail=False, methods=['post'], url_path='add')
     def add_set_flashcard(self, request):
-        
+        user_id = User.get_user_id(request.user.username)
+        print(request.user.username)
         serializer = self.get_serializer(data={
             'set_id' : request.data.get('set_id'),
-            'flashcard_id' : request.data.get('flashcard_id')
+            'flashcard_id' : request.data.get('flashcard_id'),
+            'user_id' : user_id
         })
-        print(request.data.get('set_id'),"  ",request.data.get('flashcard_id'))
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -215,16 +215,18 @@ class Set_FlashcardViewSet(viewsets.ModelViewSet):
     def list_set_flashcards(self, request, set_id = None):        
         # Assume `set_id` is obtained from the request
         req_set_id = set_id  # or request.query_params.get('set_id') for GET requests
-
+        user_id = User.get_user_id(request.user.username)
+        print(user_id)
         # Get all Flashcards related to the specific Set
         #flashcards = Flashcard.objects.filter(id = Set_Flashcard.objects.filter(set_id=req_set_id))
         flashcards = Flashcard.objects.raw("""
-            SELECT f.* 
+            SELECT f.*,s.fav_word
             FROM Flashcard f 
             INNER JOIN quizhoot_Set_Flashcard s 
             ON f.id = s.flashcard_id 
-            WHERE s.set_id = %s
-            """, [req_set_id])
+            WHERE s.set_id = %s AND s.user_id = %s
+            """, [req_set_id,user_id])
+        print(len(flashcards))
         serializer = FlashcardSerializer(flashcards, many = True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)

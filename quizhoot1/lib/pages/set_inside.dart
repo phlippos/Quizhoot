@@ -1,20 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
 import 'package:quizhoot/pages/start_quiz_view.dart';
 //import 'quiz_view.dart';
 
+
 class SetInside extends StatefulWidget {
-  const SetInside({super.key});
+  final int? setID; // Set ID can be nullable for the default constructor
+
+  // Default constructor (no parameters)
+  const SetInside({super.key}) : setID = null;
+
+  const SetInside.withSetID({super.key, required this.setID});
 
   @override
   _SetInsideState createState() => _SetInsideState();
 }
 
 class _SetInsideState extends State<SetInside> {
+  Set_FlashcardService _set_flashcardService = Set_FlashcardService();
+  FlashcardService _flashcardService = FlashcardService();
+
   // List of flashcards with terms and their definitions
+
   final List<Map<String, String>> flashcards = [
     {'term': 'Apple', 'definition': 'Apfel'},
     {'term': 'Apricot', 'definition': 'Aprikose'},
@@ -37,6 +48,7 @@ class _SetInsideState extends State<SetInside> {
   bool showSetOptions = false; // Boolean to toggle visibility of set options
   bool showDefinitions =
       false; // Boolean to toggle showing definitions (Show button functionality)
+
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +82,12 @@ class _SetInsideState extends State<SetInside> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+
               _buildNavigationButton(
                 context: context,
                 label: 'Start Quiz',
                 targetPage: const StartQuizView(),
+
               ),
               _buildNavigationButton(
                 context: context,
@@ -142,16 +156,20 @@ class _SetInsideState extends State<SetInside> {
             right: 10,
             child: IconButton(
               icon: Icon(
-                favorites[index] ? Icons.favorite : Icons.favorite_border,
-                color: favorites[index] ? Colors.red : Colors.grey,
+                flashcards[index]['fav']
+                    ? Icons.favorite
+                    : Icons.favorite_border,
+                color: flashcards[index]['fav'] ? Colors.red : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
-                  favorites[index] =
-                      !favorites[index]; // Toggle the favorite status
+                  flashcards[index]['fav'] =
+                      !flashcards[index]['fav']; // Toggle the favorite status
+                  _updateFavStatus(
+                      flashcards[index]['id'], flashcards[index]['fav']);
                 });
                 final snackBar = SnackBar(
-                  content: Text(favorites[index]
+                  content: Text(flashcards[index]['fav']
                       ? 'Added to favorites'
                       : 'Removed from favorites'), // Show feedback message
                   duration: const Duration(seconds: 1),
@@ -258,6 +276,7 @@ class _SetInsideState extends State<SetInside> {
   // Method to trigger text-to-speech for a given text
   Future<void> _speak(String text) async {
     await _flutterTts.speak(text);
+
   }
 
 // Displays the list of all flashcards, including the edit button, with toggle functionality
@@ -324,6 +343,7 @@ class _SetInsideState extends State<SetInside> {
         .showSnackBar(snackBar); // Display the snackbar message
   }
 
+
   Widget _buildNavigationButton({
     required BuildContext context,
     required String label,
@@ -335,6 +355,7 @@ class _SetInsideState extends State<SetInside> {
           MaterialPageRoute(builder: (context) => targetPage),
         );
       },
+
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.black,
         backgroundColor: Colors.white,
@@ -368,12 +389,16 @@ class _SetInsideState extends State<SetInside> {
     );
   }
 
+
 // Opens a dialog to edit a flashcard
   void _editFlashcard(int index) {
+
     final termController =
         TextEditingController(text: flashcards[index]['term']);
     final definitionController =
         TextEditingController(text: flashcards[index]['definition']);
+
+
 
     showDialog(
       context: context,
@@ -401,6 +426,7 @@ class _SetInsideState extends State<SetInside> {
               child: const Text('Cancel'),
             ),
             TextButton(
+
               onPressed: () {
                 setState(() {
                   flashcards[index] = {
@@ -409,6 +435,7 @@ class _SetInsideState extends State<SetInside> {
                   }; // Update the flashcard
                 });
                 Navigator.of(context).pop(); // Close the dialog
+
               },
               child: const Text('Save'),
             ),

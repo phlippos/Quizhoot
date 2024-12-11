@@ -76,6 +76,7 @@ class _CardsPageState extends State<CardsPage> {
                 'All cards finished!',
                 style: TextStyle(color: Colors.white, fontSize: 24),
               ),
+
       ),
       backgroundColor: const Color(0xff3A1078),
     );
@@ -146,3 +147,4 @@ class _CardsPageState extends State<CardsPage> {
     );
   }
 }
+

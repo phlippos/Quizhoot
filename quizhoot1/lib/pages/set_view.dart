@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:quizhoot/pages/flashcard_update.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'set_inside.dart';
+
 import "flashcard_creation.dart";
+
 
 class FlashcardViewPage extends StatelessWidget {
   const FlashcardViewPage({super.key});
@@ -30,6 +33,7 @@ class SetContent extends StatefulWidget {
 }
 
 class _SetContentState extends State<SetContent> {
+
   // List of sets
   final List<Map<String, String>> sets = [
     {'setName': 'Set 1', 'termCount': '5 Terms', 'createdBy': 'Creator A'},
@@ -38,11 +42,13 @@ class _SetContentState extends State<SetContent> {
   ];
 
   // Method to delete a set
+
   void _deleteSet(int index) {
     setState(() {
       sets.removeAt(index); // Remove the set at the specified index
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +81,7 @@ class _SetContentState extends State<SetContent> {
             ),
         ],
       ),
+
     );
   }
 }
@@ -84,7 +91,9 @@ class SetCard extends StatelessWidget {
   final String termCount;
   final String createdBy;
   final VoidCallback onTap;
+
   final VoidCallback onDelete; // New callback for deleting a set
+
 
   const SetCard({
     super.key,
@@ -133,7 +142,9 @@ class SetCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
+
                         builder: (context) => const CreateFlashcardPage(),
+
                       ),
                     );
                   },

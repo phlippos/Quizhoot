@@ -26,6 +26,49 @@ class FlashcardService{
     }
   }
 
+  Future<http.Response> updateFlashcard(int flashcardID, String term, String definition) async {
+    String? token = await _authService.getToken();
+
+    final response = await http.put(
+      Uri.parse('${_authService.baseurl}/flashcards/update/$flashcardID/'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token $token',
+      },
+      body: jsonEncode({
+        'term': term,
+        'definition': definition,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      return response; // Return the successful response
+    } else {
+      throw Exception('Failed to update flashcard. Status: ${response.statusCode}');
+    }
+  }
+
+  // Add the delete service method
+  Future<http.Response> deleteFlashcard(int flashcardID) async {
+    String? token = await _authService.getToken(); // Fetch the token for authentication
+
+    // Send a DELETE request to the backend API
+    final response = await http.delete(
+      Uri.parse('${_authService.baseurl}/flashcards/delete/$flashcardID/'), // API endpoint for deleting flashcard
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token $token', // Bearer token for authentication
+      },
+    );
+
+    // If the deletion is successful (HTTP status 204)
+    if (response.statusCode == 204) {
+      return response; // Return the successful response
+    } else {
+      throw Exception('Failed to delete flashcard. Status: ${response.statusCode}');
+    }
+  }
+
   bool checkExistanceNullFlashcard(List<Map<String,String>>? flashcards){
     if(flashcards == null){
       return false;

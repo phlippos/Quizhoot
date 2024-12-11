@@ -16,11 +16,11 @@ class ClassroomViewPage extends StatelessWidget {
       child: Scaffold(
         appBar: CustomTopNav(initialIndex: 2), // Custom top navigation bar
         body:
-            ClassroomContent(), // Main content of the page, which displays the classrooms
+        ClassroomContent(), // Main content of the page, which displays the classrooms
         backgroundColor:
-            Color(0xFF3A1078), // Background color for the entire page
+        Color(0xFF3A1078), // Background color for the entire page
         bottomNavigationBar:
-            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+        CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
       ),
     );
   }
@@ -123,7 +123,7 @@ class ClassroomCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white, // Background color of the card
           borderRadius:
-              BorderRadius.circular(12), // Rounded corners for the card
+          BorderRadius.circular(12), // Rounded corners for the card
           boxShadow: const [
             BoxShadow(
               color: Colors.black26, // Shadow color
