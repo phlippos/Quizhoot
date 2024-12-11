@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:quizhoot/pages/quiz_creation.dart';
-//import 'quiz_view.dart';
-import '../services/set_flashcard_service.dart';
-import '../services/flashcard_service.dart';
+
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
-import 'package:quizhoot/pages/quiz_view.dart';
+import 'package:quizhoot/pages/start_quiz_view.dart';
+//import 'quiz_view.dart';
+
 
 class SetInside extends StatefulWidget {
   final int? setID; // Set ID can be nullable for the default constructor
@@ -26,58 +25,30 @@ class _SetInsideState extends State<SetInside> {
   FlashcardService _flashcardService = FlashcardService();
 
   // List of flashcards with terms and their definitions
-  List<Map<String, dynamic>> flashcards = [];
+
+  final List<Map<String, String>> flashcards = [
+    {'term': 'Apple', 'definition': 'Apfel'},
+    {'term': 'Apricot', 'definition': 'Aprikose'},
+    {'term': 'Cherry', 'definition': 'Kirsche'},
+    {'term': 'Melon', 'definition': 'Melone'},
+    {'term': 'Pear', 'definition': 'Birne'},
+    {'term': 'Banana', 'definition': 'Banane'},
+    {'term': 'Grape', 'definition': 'Traube'},
+    {'term': 'Orange', 'definition': 'Orange'},
+    {'term': 'Strawberry', 'definition': 'Erdbeere'},
+    {'term': 'Peach', 'definition': 'Pfirsich'},
+  ];
 
   final FlutterTts _flutterTts =
       FlutterTts(); // Flutter TTS (Text-to-Speech) instance
+  List<bool> favorites = List.filled(
+      10, false); // List to track favorite status for each flashcard
   List<bool> selectedSets =
       List.filled(3, false); // List to track selected sets
   bool showSetOptions = false; // Boolean to toggle visibility of set options
-  bool showDefinitions = false;
+  bool showDefinitions =
+      false; // Boolean to toggle showing definitions (Show button functionality)
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchFlashcards();
-  }
-
-  Future<void> _fetchFlashcards() async {
-    try {
-      await _set_flashcardService.fetchData(widget.setID!);
-      List<Map<String, dynamic>> fetchedFlashcards = _set_flashcardService.data;
-      setState(() {
-        flashcards = fetchedFlashcards;
-      });
-    } catch (e) {
-      print('Error fetching sets: $e');
-    }
-  }
-
-  void _updateFavStatus(int flashcardID, bool fav) async {
-    try {
-      final response =
-          await _set_flashcardService.updateFavStatus(flashcardID, fav);
-      if (response.statusCode == 200) {
-        if (fav) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('added fav list')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('removed from fav list')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('fav operation failed')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('fav creation failed $e')),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,150 +82,12 @@ class _SetInsideState extends State<SetInside> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ElevatedButton(
-                onPressed: () {
-                  if (flashcards.length > 4) {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      builder: (context) {
-                        String? quizType; // Stores the selected quiz type
-                        bool useOnlyFavorites = false; // Checkbox state
 
-                        return StatefulBuilder(
-                          builder:
-                              (BuildContext context, StateSetter setState) {
-                            return Container(
-                              padding: const EdgeInsets.all(16.0),
-                              color: const Color(0xFF3A1078),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Select Quiz Type:',
-                                    style: TextStyle(
-                                        fontSize: 18, color: Colors.white),
-                                  ),
-                                  RadioListTile<String>(
-                                    title: const Text(
-                                      'Test',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    value: 'test',
-                                    groupValue: quizType,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        quizType = value;
-                                      });
-                                    },
-                                  ),
-                                  RadioListTile<String>(
-                                    title: const Text(
-                                      'Written',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    value: 'written',
-                                    groupValue: quizType,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        quizType = value;
-                                      });
-                                    },
-                                  ),
-                                  CheckboxListTile(
-                                    title: const Text(
-                                      'Use only favorite cards',
-                                      style: TextStyle(color: Colors.white),
-                                    ),
-                                    value: useOnlyFavorites,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        useOnlyFavorites = value ?? false;
-                                      });
-                                    },
-                                  ),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const CreateQuizPage(),
-                                            ),
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.grey[300],
-                                        ),
-                                        child: const Text(
-                                          'Create Quiz',
-                                          style: TextStyle(color: Colors.black),
-                                        ),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: quizType == null
-                                            ? null
-                                            : () {
-                                                if (quizType == 'test') {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          QuizView.withFlashcards(
-                                                              flashcards:
-                                                                  flashcards),
-                                                    ),
-                                                  );
-                                                } else if (quizType ==
-                                                    'written') {
-                                                  Navigator.of(context).push(
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          const WrittenQuiz(),
-                                                    ),
-                                                  );
-                                                }
-                                              },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.grey[300],
-                                        ),
-                                        child: const Text(
-                                          'Start Quiz',
-                                          style: TextStyle(color: Colors.black),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'min required number of term is 4 for this quiz type.',
-                        ),
-                      ),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  backgroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('Start Quiz'),
+              _buildNavigationButton(
+                context: context,
+                label: 'Start Quiz',
+                targetPage: const StartQuizView(),
+
               ),
               _buildNavigationButton(
                 context: context,
@@ -443,6 +276,7 @@ class _SetInsideState extends State<SetInside> {
   // Method to trigger text-to-speech for a given text
   Future<void> _speak(String text) async {
     await _flutterTts.speak(text);
+
   }
 
 // Displays the list of all flashcards, including the edit button, with toggle functionality
@@ -495,37 +329,18 @@ class _SetInsideState extends State<SetInside> {
     );
   }
 
-  void _deleteFlashcard(int index) async {
-    final flashcardID = flashcards[index]['id'];  // Get the flashcard ID
+// Method to delete a flashcard
+  void _deleteFlashcard(int index) {
+    setState(() {
+      flashcards.removeAt(index); // Remove the flashcard at the given index
+    });
 
-    try {
-      // Call the delete API service
-      final response = await _flashcardService.deleteFlashcard(flashcardID);
-
-      if (response.statusCode == 204) {
-        // If delete was successful, remove the flashcard from the local list
-        setState(() {
-          flashcards.removeAt(index);
-        });
-
-        // Show success message
-        final snackBar = SnackBar(
-          content: const Text('Flashcard deleted'),
-          duration: const Duration(seconds: 1),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-      } else {
-        // Show error message if the delete failed
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error deleting flashcard')),
-        );
-      }
-    } catch (e) {
-      // Handle any errors
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete flashcard: $e')),
-      );
-    }
+    final snackBar = SnackBar(
+      content: const Text('Flashcard deleted'), // Show feedback message
+      duration: const Duration(seconds: 1),
+    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(snackBar); // Display the snackbar message
   }
 
 
@@ -533,15 +348,14 @@ class _SetInsideState extends State<SetInside> {
     required BuildContext context,
     required String label,
     required Widget targetPage,
-    VoidCallback? onPressed,
   }) {
     return ElevatedButton(
-      onPressed: onPressed ??
-          () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => targetPage),
-            );
-          },
+      onPressed: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => targetPage),
+        );
+      },
+
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.black,
         backgroundColor: Colors.white,
@@ -575,12 +389,15 @@ class _SetInsideState extends State<SetInside> {
     );
   }
 
+
+// Opens a dialog to edit a flashcard
   void _editFlashcard(int index) {
 
     final termController =
         TextEditingController(text: flashcards[index]['term']);
     final definitionController =
         TextEditingController(text: flashcards[index]['definition']);
+
 
 
     showDialog(
@@ -609,23 +426,16 @@ class _SetInsideState extends State<SetInside> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () async {
-                final updatedTerm = termController.text;
-                final updatedDefinition = definitionController.text;
 
-                // Call the method to update the flashcard
-                await _flashcardService.updateFlashcard(flashcardID, updatedTerm, updatedDefinition);
+              onPressed: () {
+                setState(() {
+                  flashcards[index] = {
+                    'term': termController.text,
+                    'definition': definitionController.text,
+                  }; // Update the flashcard
+                });
+                Navigator.of(context).pop(); // Close the dialog
 
-                // Close the dialog
-                Navigator.of(context).pop();
-
-                // Refresh the flashcards after the update
-                await _fetchFlashcards(); // Fetch updated flashcards
-
-                // Optional: Show a confirmation snackBar
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Flashcard updated successfully!')),
-                );
               },
               child: const Text('Save'),
             ),
@@ -635,4 +445,3 @@ class _SetInsideState extends State<SetInside> {
     );
   }
 }
-

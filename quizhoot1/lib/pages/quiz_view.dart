@@ -2,132 +2,136 @@ import 'package:flutter/material.dart';
 import '../services/quiz_service.dart';
 
 class QuizView extends StatefulWidget {
-  final List<Map<String, dynamic>>? flashcards;
-  const QuizView({super.key}) : flashcards = null;
-  const QuizView.withFlashcards({super.key, required this.flashcards});
+
+  final bool useOnlyFavorites;
+
+  const QuizView({super.key, required this.useOnlyFavorites});
+
   @override
   _QuizViewState createState() => _QuizViewState();
 }
 
 class _QuizViewState extends State<QuizView> {
-  // List of questions with options and the correct answer
-  final QuizService _quizService = QuizService();
-  late List<Map<String, dynamic>> questions;
+  final List<Map<String, dynamic>> questions = [
+    {
+      'question': 'Apple',
+      'options': ['Apfel', 'Aprikose', 'Kirsche', 'Melone'],
+      'answer': 'Apfel',
+      'isFavorite': true
+    },
+    {
+      'question': 'Cherry',
+      'options': ['Aprikose', 'Melone', 'Kirsche', 'Apfel'],
+      'answer': 'Kirsche',
+      'isFavorite': false
+    },
+  ];
+
+  late List<Map<String, dynamic>> filteredQuestions;
+  int currentQuestionIndex = 0;
+  int score = 0;
+  String? selectedAnswer;
 
   @override
   void initState() {
     super.initState();
-    questions = _quizService.generateQuestions(widget.flashcards);
+    filteredQuestions = widget.useOnlyFavorites
+        ? questions.where((q) => q['isFavorite'] == true).toList()
+        : questions;
   }
-
-  int currentQuestionIndex = 0; // Keeps track of the current question
-  int score = 0; // User's score
-  String? selectedAnswer; // Selected answer by the user
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quiz'), // AppBar title
-        backgroundColor: const Color(0xFF3A1078), // AppBar background color
+        title: const Text('Quiz'),
+        backgroundColor: const Color(0xFF3A1078),
       ),
-      // Display the quiz or result based on the question index
-      body: currentQuestionIndex < questions.length
-          ? _buildQuizQuestion() // Show question if there are more questions
-          : _buildResult(), // Show result if all questions are answered
-      backgroundColor:
-          const Color(0xFF3A1078), // Background color of the screen
+      body: currentQuestionIndex < filteredQuestions.length
+          ? _buildQuizQuestion()
+          : _buildResult(),
+      backgroundColor: const Color(0xFF3A1078),
     );
   }
 
-  // Builds the quiz question UI
   Widget _buildQuizQuestion() {
-    final question =
-        questions[currentQuestionIndex]; // Get the current question
+    final question = filteredQuestions[currentQuestionIndex];
 
     return Padding(
-      padding: const EdgeInsets.all(16.0), // Padding for the content
+      padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, // Center the content
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            question['question'], // Display the question
-            style: const TextStyle(
-                fontSize: 20, color: Colors.white), // Text style
-            textAlign: TextAlign.center, // Center the question text
+            question['question'],
+            style: const TextStyle(fontSize: 20, color: Colors.white),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20), // Space between question and options
-          // Generate radio buttons for each option
+          const SizedBox(height: 20),
           ...question['options'].map((option) {
             return Container(
-              margin: const EdgeInsets.symmetric(
-                  vertical: 8.0), // Margin for each option
+              margin: const EdgeInsets.symmetric(vertical: 8.0),
               decoration: BoxDecoration(
                 color: selectedAnswer == option
-                    ? Colors.grey[600] // Highlight selected answer
-                    : Colors.grey[300], // Default background for unselected
-                borderRadius: BorderRadius.circular(10), // Rounded corners
+                    ? Colors.grey[600]
+                    : Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
               ),
               child: RadioListTile<String>(
-                title: Text(option,
-                    style: const TextStyle(color: Colors.black)), // Option text
-                value: option, // Option value
-                groupValue: selectedAnswer, // Group value for radio button
+                title:
+                    Text(option, style: const TextStyle(color: Colors.black)),
+                value: option,
+                groupValue: selectedAnswer,
                 onChanged: (value) {
                   setState(() {
-                    selectedAnswer = value; // Update selected answer
+                    selectedAnswer = value;
                   });
                 },
-                activeColor:
-                    const Color(0xFF3A1078), // Active radio button color
-                controlAffinity: ListTileControlAffinity
-                    .trailing, // Move radio button to the right
+                activeColor: const Color(0xFF3A1078),
+                controlAffinity: ListTileControlAffinity.trailing,
               ),
             );
           }).toList(),
-          const SizedBox(height: 20), // Space between options and submit button
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: selectedAnswer == null
-                ? null // Disable button if no answer is selected
+                ? null
                 : () {
-                    _checkAnswer(); // Check the selected answer
+                    _checkAnswer();
                   },
-            child: const Text('Submit'), // Submit button text
+            child: const Text('Submit'),
           ),
         ],
       ),
     );
   }
 
-  // Check the selected answer and update score and question index
   void _checkAnswer() {
-    if (selectedAnswer == questions[currentQuestionIndex]['answer']) {
-      score++; // Increase score if the answer is correct
+    if (selectedAnswer == filteredQuestions[currentQuestionIndex]['answer']) {
+      score++;
     }
 
     setState(() {
-      currentQuestionIndex++; // Move to the next question
-      selectedAnswer = null; // Reset the selected answer
+      currentQuestionIndex++;
+      selectedAnswer = null;
     });
   }
 
-  // Builds the result UI after all questions are answered
   Widget _buildResult() {
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center, // Center the content
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Your Score: $score/${questions.length}', // Display user's score
-            style: const TextStyle(
-                fontSize: 24, color: Colors.white), // Text style
+            'Your Score: $score/${filteredQuestions.length}',
+            style: const TextStyle(fontSize: 24, color: Colors.white),
           ),
-          const SizedBox(height: 20), // Space between score and button
+          const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Go back to the previous page
+              Navigator.of(context).pop();
             },
-            child: const Text('Back to Flashcards'), // Button text
+            child: const Text('Back to Flashcards'),
           ),
         ],
       ),

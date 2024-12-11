@@ -3,8 +3,9 @@ import 'package:quizhoot/pages/flashcard_update.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'set_inside.dart';
-//import "flashcard_creation.dart";
-import '../services/set_service.dart';
+
+import "flashcard_creation.dart";
+
 
 class FlashcardViewPage extends StatelessWidget {
   const FlashcardViewPage({super.key});
@@ -32,24 +33,15 @@ class SetContent extends StatefulWidget {
 }
 
 class _SetContentState extends State<SetContent> {
-  final SetService _setService = SetService();
-  List<Map<String, dynamic>> sets = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchSets();
-  }
+  // List of sets
+  final List<Map<String, String>> sets = [
+    {'setName': 'Set 1', 'termCount': '5 Terms', 'createdBy': 'Creator A'},
+    {'setName': 'Set 2', 'termCount': '8 Terms', 'createdBy': 'Creator B'},
+    {'setName': 'Set 3', 'termCount': '12 Terms', 'createdBy': 'Creator C'},
+  ];
 
-  void _addPlaceholderSet() {
-    // Placeholder set for testing
-    sets.add({
-      'id': 1,
-      'set_name': 'Sample Set',
-      'size': 5,
-      'createdBy': 'Test User',
-    });
-  }
+  // Method to delete a set
 
   void _deleteSet(int index) {
     setState(() {
@@ -57,63 +49,39 @@ class _SetContentState extends State<SetContent> {
     });
   }
 
-  Future<void> _fetchSets() async {
-    try {
-      await _setService.fetchData();
-      List<Map<String, dynamic>> fetchedSets = _setService.data;
-      setState(() {
-        sets = fetchedSets;
-      });
-    } catch (e) {
-      print('Error fetching sets: $e');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: sets.isEmpty
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'You have not created any sets yet.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                CircularProgressIndicator(),
-              ],
-            )
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: sets.map((set) {
-                return Column(
-                  children: [
-                    SetCard(
-                      setName: set['set_name']!,
-                      termCount: set['size']!.toString(),
-                      createdBy: set['createdBy']!,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                SetInside.withSetID(setID: set['id']!),
-                          ),
-                        );
-                      },
-                      onDelete: () =>
-                          _deleteSet(sets.indexOf(set)), // Pass delete callback
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (int i = 0; i < sets.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: SetCard(
+                setName: sets[i]['setName']!,
+                termCount: sets[i]['termCount']!,
+                createdBy: sets[i]['createdBy']!,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SetInside(),
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              }).toList(),
+                  );
+                },
+                onDelete: () => _deleteSet(i), // Pass delete callback
+              ),
             ),
+          if (sets.isEmpty)
+            const Text(
+              'No sets available.',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+        ],
+      ),
+
     );
   }
 }
@@ -123,7 +91,9 @@ class SetCard extends StatelessWidget {
   final String termCount;
   final String createdBy;
   final VoidCallback onTap;
-  final VoidCallback onDelete;
+
+  final VoidCallback onDelete; // New callback for deleting a set
+
 
   const SetCard({
     super.key,
@@ -157,7 +127,7 @@ class SetCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.format_list_numbered, size: 40), // Set ikonu
+                const Icon(Icons.format_list_numbered, size: 40),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -172,14 +142,9 @@ class SetCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => UpdateFlashcardPage(
-                          setName: setName,
-                          flashcards: [
-                            {'term': 'Term 1', 'definition': 'Definition 1'},
-                            {'term': 'Term 2', 'definition': 'Definition 2'},
-                            {'term': 'Term 3', 'definition': 'Definition 3w'},
-                          ],
-                        ),
+
+                        builder: (context) => const CreateFlashcardPage(),
+
                       ),
                     );
                   },
@@ -193,17 +158,17 @@ class SetCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.workspaces, size: 20), // Terim sayısı ikonu
+                const Icon(Icons.workspaces, size: 20),
                 const SizedBox(width: 5),
-                Text(termCount), // Terim sayısı
+                Text(termCount),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.account_circle, size: 20), // Creator ikonu
+                const Icon(Icons.account_circle, size: 20),
                 const SizedBox(width: 5),
-                Text(createdBy), // Oluşturan kişi adı
+                Text(createdBy),
               ],
             ),
           ],

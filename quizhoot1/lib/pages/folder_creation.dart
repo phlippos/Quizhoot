@@ -128,7 +128,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showFolderDialog, // Opens dialog to create folder
         backgroundColor:
-        const Color.fromARGB(255, 237, 234, 240), // Button background color
+            const Color.fromARGB(255, 237, 234, 240), // Button background color
         child: const Icon(Icons.add), // Icon for the floating button
       ),
     );

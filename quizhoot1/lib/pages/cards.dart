@@ -31,51 +31,52 @@ class _CardsPageState extends State<CardsPage> {
       body: Center(
         child: currentIndex < flashcards.length
             ? GestureDetector(
-          onPanUpdate: (details) {
-            setState(() {
-              _dragOffset += details.delta;
-            });
-          },
-          onPanEnd: (details) {
-            if (_dragOffset.dx > 200) {
-              _swipeRight(); // Swipe right to the next card
-            } else if (_dragOffset.dx < -200) {
-              _swipeLeft(); // Swipe left to the next card
-            } else {
-              setState(() {
-                _dragOffset = Offset.zero; // Reset position
-                _opacity = 1.0; // Reset opacity
-              });
-            }
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            transform: Matrix4.translationValues(
-              _dragOffset.dx,
-              0, // Vertical movement is fixed
-              0,
-            ),
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: _opacity,
-              child: FlipCard(
-                key: ValueKey(currentIndex), // Reset flip state
-                front: _buildCardFace(
-                  flashcards[currentIndex]['term']!,
-                  _getCardColor(),
+                onPanUpdate: (details) {
+                  setState(() {
+                    _dragOffset += details.delta;
+                  });
+                },
+                onPanEnd: (details) {
+                  if (_dragOffset.dx > 200) {
+                    _swipeRight(); // Swipe right to the next card
+                  } else if (_dragOffset.dx < -200) {
+                    _swipeLeft(); // Swipe left to the next card
+                  } else {
+                    setState(() {
+                      _dragOffset = Offset.zero; // Reset position
+                      _opacity = 1.0; // Reset opacity
+                    });
+                  }
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  transform: Matrix4.translationValues(
+                    _dragOffset.dx,
+                    0, // Vertical movement is fixed
+                    0,
+                  ),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 200),
+                    opacity: _opacity,
+                    child: FlipCard(
+                      key: ValueKey(currentIndex), // Reset flip state
+                      front: _buildCardFace(
+                        flashcards[currentIndex]['term']!,
+                        _getCardColor(),
+                      ),
+                      back: _buildCardFace(
+                        flashcards[currentIndex]['definition']!,
+                        _getCardColor(),
+                      ),
+                    ),
+                  ),
                 ),
-                back: _buildCardFace(
-                  flashcards[currentIndex]['definition']!,
-                  _getCardColor(),
-                ),
-              ),
-            ),
-          ),
-        )
+              )
             : const Text(
-          'All cards finished!',
-          style: TextStyle(color: Colors.white, fontSize: 24),
-        ),
+                'All cards finished!',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+
       ),
       backgroundColor: const Color(0xff3A1078),
     );
@@ -146,3 +147,4 @@ class _CardsPageState extends State<CardsPage> {
     );
   }
 }
+
