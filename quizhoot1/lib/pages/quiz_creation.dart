@@ -13,7 +13,7 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
     {
       'question': '', // Initial question for the quiz
       'options':
-          List.generate(4, (_) => ''), // Initial options for the quiz (empty)
+      List.generate(4, (_) => ''), // Initial options for the quiz (empty)
       'correctAnswer': '', // Initial correct answer for the quiz
     },
   ];
@@ -47,8 +47,7 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
   void _navigateToQuizView() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            const QuizView(useOnlyFavorites: false), // Navigate to QuizView
+        builder: (context) => const QuizView(), // Navigate to QuizView
       ),
     );
   }
@@ -59,11 +58,11 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
       appBar: AppBar(
         title: const Text('Create Quiz'), // Title of the page
         backgroundColor:
-            const Color(0xFF3A1078), // Set background color for the app bar
+        const Color(0xFF3A1078), // Set background color for the app bar
       ),
       body: Container(
         padding:
-            const EdgeInsets.all(16.0), // Padding around the quiz creation form
+        const EdgeInsets.all(16.0), // Padding around the quiz creation form
         color: const Color(0xFF3A1078), // Background color for the body
         child: SingleChildScrollView(
           child: Column(
@@ -74,10 +73,10 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                 Map<String, dynamic> quiz = entry.value;
                 return Card(
                   margin:
-                      const EdgeInsets.symmetric(vertical: 10), // Card margin
+                  const EdgeInsets.symmetric(vertical: 10), // Card margin
                   child: Padding(
                     padding:
-                        const EdgeInsets.all(16.0), // Padding inside the card
+                    const EdgeInsets.all(16.0), // Padding inside the card
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -88,13 +87,13 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                           decoration: const InputDecoration(
                             labelText: 'Question', // Label for the text field
                             hintText:
-                                'Enter the question here', // Hint text for the text field
+                            'Enter the question here', // Hint text for the text field
                             border:
-                                OutlineInputBorder(), // Border for the text field
+                            OutlineInputBorder(), // Border for the text field
                           ),
                           controller: TextEditingController(
                               text: quiz[
-                                  'question']), // Set controller with the current question value
+                              'question']), // Set controller with the current question value
                         ),
                         const SizedBox(height: 15), // Space between fields
                         // Generate 4 option fields dynamically
@@ -108,15 +107,15 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                                   value), // Update option on text change
                               decoration: InputDecoration(
                                 labelText:
-                                    'Option ${optionIndex + 1}', // Label for the option field
+                                'Option ${optionIndex + 1}', // Label for the option field
                                 hintText:
-                                    'Enter option ${optionIndex + 1}', // Hint text for the option field
+                                'Enter option ${optionIndex + 1}', // Hint text for the option field
                                 border:
-                                    const OutlineInputBorder(), // Border for the option field
+                                const OutlineInputBorder(), // Border for the option field
                               ),
                               controller: TextEditingController(
                                   text: quiz['options'][
-                                      optionIndex]), // Set controller with the current option value
+                                  optionIndex]), // Set controller with the current option value
                             ),
                           );
                         }),
@@ -129,15 +128,15 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                               value), // Update correct answer on text change
                           decoration: const InputDecoration(
                             labelText:
-                                'Correct Answer', // Label for the correct answer field
+                            'Correct Answer', // Label for the correct answer field
                             hintText:
-                                'Enter the correct answer here', // Hint text for the correct answer field
+                            'Enter the correct answer here', // Hint text for the correct answer field
                             border:
-                                OutlineInputBorder(), // Border for the correct answer field
+                            OutlineInputBorder(), // Border for the correct answer field
                           ),
                           controller: TextEditingController(
                               text: quiz[
-                                  'correctAnswer']), // Set controller with the current correct answer value
+                              'correctAnswer']), // Set controller with the current correct answer value
                         ),
                         const SizedBox(
                             height: 10), // Space at the bottom of the card
@@ -150,10 +149,10 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
               // Button to navigate to the QuizView page
               ElevatedButton(
                 onPressed:
-                    _navigateToQuizView, // Navigate when the button is pressed
+                _navigateToQuizView, // Navigate when the button is pressed
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(
-                      255, 229, 227, 233), // Button background color
+                  backgroundColor:
+                  const Color(0xFF3A1078), // Button background color
                 ),
                 child: const Text('Create Quiz'), // Button text
               ),
@@ -163,8 +162,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addQuiz, // Add a new quiz when the button is pressed
-        backgroundColor: const Color.fromARGB(
-            255, 229, 227, 233), // Floating button background color
+        backgroundColor:
+        const Color(0xFF3A1078), // Floating button background color
         child: const Icon(Icons.add), // Floating button icon
       ),
     );
