@@ -7,6 +7,9 @@ import 'package:quizhoot/pages/folder_creation.dart';
 import 'package:quizhoot/pages/quiz_creation.dart';
 import 'package:quizhoot/pages/wordle.dart';
 import 'package:quizhoot/pages/word_chain.dart';
+//import 'package:quizhoot/pages/classroom_view.dart';
+//import 'package:quizhoot/pages/set_view.dart';
+
 import 'custom_bottom_nav.dart';
 import '../classes/User.dart';
 import 'package:provider/provider.dart';

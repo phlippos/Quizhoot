@@ -47,7 +47,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
   void _navigateToQuizView() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const QuizView(), // Navigate to QuizView
+        builder: (context) =>
+            const QuizView(useOnlyFavorites: false), // Navigate to QuizView
       ),
     );
   }
@@ -151,8 +152,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
                 onPressed:
                     _navigateToQuizView, // Navigate when the button is pressed
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color(0xFF3A1078), // Button background color
+                  backgroundColor: const Color.fromARGB(
+                      255, 229, 227, 233), // Button background color
                 ),
                 child: const Text('Create Quiz'), // Button text
               ),
@@ -162,8 +163,8 @@ class _CreateQuizPageState extends State<CreateQuizPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addQuiz, // Add a new quiz when the button is pressed
-        backgroundColor:
-            const Color(0xFF3A1078), // Floating button background color
+        backgroundColor: const Color.fromARGB(
+            255, 229, 227, 233), // Floating button background color
         child: const Icon(Icons.add), // Floating button icon
       ),
     );

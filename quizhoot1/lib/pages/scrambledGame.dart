@@ -186,7 +186,9 @@ class _ScrambledGameState extends State<ScrambledGame> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   3,
-                      (index) => Icon(
+
+                  (index) => Icon(
+
                     index < lives ? Icons.favorite : Icons.favorite_border,
                     color: Colors.red,
                     size: width * 0.08,
@@ -242,7 +244,9 @@ class _ScrambledGameState extends State<ScrambledGame> {
                         setState(() {
                           userGuess[emptyIndex] = letter;
                           scrambledLetters[scrambledLetters.indexOf(letter)] =
-                          '';
+
+                              '';
+
                         });
                         _checkGuess();
                       }
@@ -307,4 +311,6 @@ class _ScrambledGameState extends State<ScrambledGame> {
     timer?.cancel();
     super.dispose();
   }
+
 }
+

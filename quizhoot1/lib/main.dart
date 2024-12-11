@@ -5,6 +5,7 @@ import 'pages/pages.dart';
 import 'classes/User.dart';
 import 'package:provider/provider.dart';
 
+
 void main() {
   // Initialize AuthService singleton before running the app
 
