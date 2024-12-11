@@ -1,12 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quizhoot/classes/Flashcard.dart';
-import 'set_view.dart'; // Import the necessary page for navigation
-import '../services/set_service.dart';
-import '../services/flashcard_service.dart';
-import '../services/set_flashcard_service.dart';
-
 import '../classes/User.dart';
 import '../classes/Set.dart';
 
@@ -38,61 +32,54 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
 
   void _createSet() async {
     if (_setNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a title for the set.')),
-      );
+      _showSnackBar('Please enter a title for the set.');
       return;
     }
 
-    if (Flashcard.checkExistanceNullFlashcard(flashcards)) {
-      if (Flashcard.checkDuplication(flashcards)) {
-        try {
-          _set = Set.create(_setNameController.text, cardNumber);
-          final responseSet = await _set.add();
-          if (responseSet.statusCode == 201) {
-            _user.addComponent(_set);
-            for (Map<String, String> flashcard in flashcards) {
-              Flashcard flashcardobj = Flashcard.create(
-                  flashcard['term']!, flashcard['definition']!);
-              final responseFlashcard = await flashcardobj.add();
-              if (responseFlashcard.statusCode == 201) {
-                final responseRelation = await _set.createRelationSet_Flashcard(
-                    flashcardobj);
-                _set.addComponent(flashcardobj);
-
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Flashcard creation failed')),
-                );
-              }
-            }
-            Navigator.pushNamed(
-                context,
-                '/setView');
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('set creation failed')),
-            );
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('set creation failed $e')),
-          );
-        }
-      } else {
-        duplicateIndices = Flashcard.getDuplicateIndices(flashcards);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Duplicate terms are not allowed.')),
-        );
-      }
-    } else {
-      nullTermOrDefinitionIndices =
-          Flashcard.getNullTermOrDefinitionIndices(flashcards);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('All cards must have both term and definition.')),
-      );
+    if (!Flashcard.checkExistanceNullFlashcard(flashcards)) {
+      nullTermOrDefinitionIndices = Flashcard.getNullTermOrDefinitionIndices(flashcards);
+      _showSnackBar('All cards must have both term and definition.');
+      return;
     }
+
+    if (!Flashcard.checkDuplication(flashcards)) {
+      duplicateIndices = Flashcard.getDuplicateIndices(flashcards);
+      _showSnackBar('Duplicate terms are not allowed.');
+      return;
+    }
+
+    try {
+      _set = Set.create(_setNameController.text, cardNumber);
+      final responseSet = await _set.add();
+
+      if (responseSet.statusCode == 201) {
+        _user.addComponent(_set);
+        await _addFlashcardsToSet(_set);
+        Navigator.pushNamed(context, '/setView');
+      } else {
+        _showSnackBar('Set creation failed.');
+      }
+    } catch (e) {
+      _showSnackBar('Set creation failed: $e');
+    }
+  }
+
+  Future<void> _addFlashcardsToSet(Set set) async {
+    for (Map<String, String> flashcard in flashcards) {
+      Flashcard flashcardObj = Flashcard.create(flashcard['term']!, flashcard['definition']!);
+      final responseFlashcard = await flashcardObj.add();
+
+      if (responseFlashcard.statusCode == 201) {
+        await set.createRelationSet_Flashcard(flashcardObj);
+        set.addComponent(flashcardObj);
+      } else {
+        _showSnackBar('Flashcard creation failed.');
+      }
+    }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
 
@@ -108,6 +95,7 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
   void deleteFlashcard(int index) {
     setState(() {
       flashcards.removeAt(index);
+      cardNumber--;
     });
   }
   @override

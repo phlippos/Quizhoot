@@ -22,11 +22,11 @@ class _UpdateFlashcardPageState extends State<UpdateFlashcardPage> {
   bool _isLoaded = false;
   late List<Flashcard> _oldComponents;
   late List<Flashcard> _newComponents;
-  bool _onlyOnce = false;
+
   @override
   void didChangeDependencies(){
     super.didChangeDependencies();
-    if(_onlyOnce == false) {
+    if(_isLoaded == false) {
       _set = ModalRoute
           .of(context)
           ?.settings
@@ -48,7 +48,6 @@ class _UpdateFlashcardPageState extends State<UpdateFlashcardPage> {
       _oldComponents = _set.components.whereType<Flashcard>().toList();
       _newComponents = _set.components.whereType<Flashcard>().toList();
       _isLoaded = true;
-      _onlyOnce = true;
     });
   }
 
@@ -82,70 +81,82 @@ class _UpdateFlashcardPageState extends State<UpdateFlashcardPage> {
   }
 
   Future<void> _updateSet() async {
-
     if (_setNameController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a title for the set.')),
-      );
+      _showSnackBar('Please enter a title for the set.');
       return;
     }
 
-    for(int i = 0; i < flashcardControllers.length; i++){
+    _updateFlashcardsFromControllers();
+
+    if (_newComponents.any((card) => card.term.isEmpty || card.definition.isEmpty)) {
+      _showSnackBar('All cards must have both term and definition.');
+      return;
+    }
+
+    List<Flashcard> deletedComponents = _findDeletedComponents();
+    List<Flashcard> newFlashcards = _findNewComponents();
+    List<Flashcard> updatedComponents = _findUpdatedComponents();
+
+    await _removeDeletedComponents(deletedComponents);
+    await _addNewFlashcards(newFlashcards);
+    await _updateComponents(updatedComponents);
+
+    _set.components = _newComponents;
+    _set.name = _setNameController.text;
+    await _set.update();
+
+    _showSnackBar('Flashcard set updated successfully!');
+    Navigator.pushNamed(context, '/setView');
+  }
+
+  void _updateFlashcardsFromControllers() {
+    for (int i = 0; i < flashcardControllers.length; i++) {
       Flashcard flashcard = _newComponents.elementAt(i) as Flashcard;
       flashcard.term = flashcardControllers.elementAt(i)['term']!.text;
       flashcard.definition = flashcardControllers.elementAt(i)['definition']!.text;
     }
+  }
 
-    if (_newComponents
-        .any((card) => card.term == "" || card.definition == "")) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('All cards must have both term and definition.')),
-      );
-      return;
-    }
-
-    List<Flashcard> deletedComponents = _oldComponents.where((oldComponent) {
+  List<Flashcard> _findDeletedComponents() {
+    return _oldComponents.where((oldComponent) {
       return !_newComponents.any((newComponent) => newComponent.id == oldComponent.id);
     }).toList();
+  }
 
-    List<Flashcard> newFlashcards = _newComponents.where((newComponent) {
-      return newComponent.id == null;
-    }).toList();
+  List<Flashcard> _findNewComponents() {
+    return _newComponents.where((newComponent) => newComponent.id == null).toList();
+  }
 
-    List<Flashcard> updatedComponents = _newComponents.where((newComponent) {
-      if(newComponent.id != null) {
-        Flashcard? matchingOldComponent = _oldComponents.firstWhere(
-              (oldComponent) => oldComponent.id == newComponent.id,
-        );
-          return matchingOldComponent != null;
-      }else {
-        return false;
+  List<Flashcard> _findUpdatedComponents() {
+    return _newComponents.where((newComponent) {
+      if (newComponent.id != null) {
+        return _oldComponents.any((oldComponent) => oldComponent.id == newComponent.id);
       }
+      return false;
     }).toList();
+  }
 
+  Future<void> _removeDeletedComponents(List<Flashcard> deletedComponents) async {
     for (Flashcard deletedComponent in deletedComponents) {
       await deletedComponent.remove();
     }
+  }
 
+  Future<void> _addNewFlashcards(List<Flashcard> newFlashcards) async {
     for (Flashcard newFlashcard in newFlashcards) {
       await newFlashcard.add();
       await _set.createRelationSet_Flashcard(newFlashcard);
     }
+  }
 
+  Future<void> _updateComponents(List<Flashcard> updatedComponents) async {
     for (Flashcard updatedComponent in updatedComponents) {
       await updatedComponent.update();
     }
+  }
 
-    _set.components = _newComponents;
-    _set.name = _setNameController.text;
-    _set.update();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Flashcard set updated successfully!')),
-    );
-
-    Navigator.pushNamed(context, '/setView');
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
