@@ -413,16 +413,16 @@ class _SetInsideState extends State<SetInside> {
     for (int i = 0; i < _selectedSets.length; i++) {
       if (_selectedSets[i] == true) {
         try {
-          bool isAdded = _sets[i].addComponent(Flashcard(
-            _selectedFlashcard.id,
+          Flashcard flashcard = Flashcard.create(
             _selectedFlashcard.term,
             _selectedFlashcard.definition,
-            _selectedFlashcard.favStatus,
-          ));
+          );
+          await flashcard.add();
+          bool isAdded = _sets[i].addComponent(flashcard);
 
           if (isAdded) {
-            _sets[i].sizeRefresh();
-            await _sets[i].createRelationSet_Flashcard(_selectedFlashcard);
+            _sets[i].size++;
+            await _sets[i].createRelationSet_Flashcard(flashcard);
             _showFlushbar(
               'The Flashcard added to your Set ${_sets[i].name}',
               Icons.info_outline,

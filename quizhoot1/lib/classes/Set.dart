@@ -44,7 +44,7 @@ class Set implements IComponent{
 
   set components(List<IComponent> value) {
     _components = value;
-    sizeRefresh();
+    size = components.length;
   }
 
   static SetService get service => _service;
@@ -99,9 +99,6 @@ class Set implements IComponent{
     }
   }
 
-  void sizeRefresh(){
-    size = components.length;
-  }
 
   Future<void> fetchFlashcards() async{
     final response = await _set_flashcardService.fetchData(_id);
@@ -110,6 +107,7 @@ class Set implements IComponent{
       data.forEach((flashcard){
         addComponent(Flashcard(flashcard['id'],flashcard['term'],flashcard['definition'],flashcard['fav']));
       });
+      size = components.length;
     }else{
       throw Exception('Failed to load data');
     }
