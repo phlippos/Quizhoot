@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'quiz_view.dart';
+import 'package:quizhoot/pages/quiz_creation.dart';
+//import 'quiz_view.dart';
 import '../services/set_flashcard_service.dart';
 import '../services/flashcard_service.dart';
 import 'package:quizhoot/pages/cards.dart';
 import 'package:quizhoot/pages/scrambledGame.dart';
+import 'package:quizhoot/pages/quiz_view.dart';
 
 class SetInside extends StatefulWidget {
   final int? setID; // Set ID can be nullable for the default constructor
@@ -13,17 +15,13 @@ class SetInside extends StatefulWidget {
   // Default constructor (no parameters)
   const SetInside({super.key}) : setID = null;
 
-  const SetInside.withSetID({
-    super.key,
-    required this.setID
-  });
+  const SetInside.withSetID({super.key, required this.setID});
 
   @override
   _SetInsideState createState() => _SetInsideState();
 }
 
 class _SetInsideState extends State<SetInside> {
-
   Set_FlashcardService _set_flashcardService = Set_FlashcardService();
   FlashcardService _flashcardService = FlashcardService();
 
@@ -31,51 +29,50 @@ class _SetInsideState extends State<SetInside> {
   List<Map<String, dynamic>> flashcards = [];
 
   final FlutterTts _flutterTts =
-  FlutterTts(); // Flutter TTS (Text-to-Speech) instance
+      FlutterTts(); // Flutter TTS (Text-to-Speech) instance
   List<bool> selectedSets =
-  List.filled(3, false); // List to track selected sets
+      List.filled(3, false); // List to track selected sets
   bool showSetOptions = false; // Boolean to toggle visibility of set options
   bool showDefinitions = false;
 
-
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _fetchFlashcards();
   }
 
-  Future<void> _fetchFlashcards() async{
-    try{
+  Future<void> _fetchFlashcards() async {
+    try {
       await _set_flashcardService.fetchData(widget.setID!);
       List<Map<String, dynamic>> fetchedFlashcards = _set_flashcardService.data;
       setState(() {
         flashcards = fetchedFlashcards;
       });
-    }catch (e) {
+    } catch (e) {
       print('Error fetching sets: $e');
     }
   }
 
-  void _updateFavStatus(int flashcardID,bool fav) async{
+  void _updateFavStatus(int flashcardID, bool fav) async {
     try {
-      final response = await _set_flashcardService.updateFavStatus(
-          flashcardID, fav);
-      if(response.statusCode == 200){
-        if(fav) {
+      final response =
+          await _set_flashcardService.updateFavStatus(flashcardID, fav);
+      if (response.statusCode == 200) {
+        if (fav) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('added fav list')),
           );
-        }else{
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('removed from fav list')),
           );
         }
-      }else{
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('fav operation failed')),
         );
       }
-    }catch(e){
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('fav creation failed $e')),
       );
@@ -88,7 +85,7 @@ class _SetInsideState extends State<SetInside> {
       appBar: AppBar(
         title: const Text('Set Inside'),
         backgroundColor:
-        const Color(0xFF3A1078), // Custom color for the app bar
+            const Color(0xFF3A1078), // Custom color for the app bar
       ),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -114,22 +111,150 @@ class _SetInsideState extends State<SetInside> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavigationButton(
-                context: context,
-                label: 'Start Quiz',
-                targetPage: const QuizView(),
-                onPressed : () {
-                  if(flashcards.length > 4 ) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) =>
-                          QuizView.withFlashcards(flashcards: flashcards)),
+              ElevatedButton(
+                onPressed: () {
+                  if (flashcards.length > 4) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      builder: (context) {
+                        String? quizType; // Stores the selected quiz type
+                        bool useOnlyFavorites = false; // Checkbox state
+
+                        return StatefulBuilder(
+                          builder:
+                              (BuildContext context, StateSetter setState) {
+                            return Container(
+                              padding: const EdgeInsets.all(16.0),
+                              color: const Color(0xFF3A1078),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Select Quiz Type:',
+                                    style: TextStyle(
+                                        fontSize: 18, color: Colors.white),
+                                  ),
+                                  RadioListTile<String>(
+                                    title: const Text(
+                                      'Test',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    value: 'test',
+                                    groupValue: quizType,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        quizType = value;
+                                      });
+                                    },
+                                  ),
+                                  RadioListTile<String>(
+                                    title: const Text(
+                                      'Written',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    value: 'written',
+                                    groupValue: quizType,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        quizType = value;
+                                      });
+                                    },
+                                  ),
+                                  CheckboxListTile(
+                                    title: const Text(
+                                      'Use only favorite cards',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    value: useOnlyFavorites,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        useOnlyFavorites = value ?? false;
+                                      });
+                                    },
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const CreateQuizPage(),
+                                            ),
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.grey[300],
+                                        ),
+                                        child: const Text(
+                                          'Create Quiz',
+                                          style: TextStyle(color: Colors.black),
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: quizType == null
+                                            ? null
+                                            : () {
+                                                if (quizType == 'test') {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          QuizView.withFlashcards(
+                                                              flashcards:
+                                                                  flashcards),
+                                                    ),
+                                                  );
+                                                } else if (quizType ==
+                                                    'written') {
+                                                  Navigator.of(context).push(
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          const WrittenQuiz(),
+                                                    ),
+                                                  );
+                                                }
+                                              },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.grey[300],
+                                        ),
+                                        child: const Text(
+                                          'Start Quiz',
+                                          style: TextStyle(color: Colors.black),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
                     );
-                  }else{
+                  } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('min required number of term is 4 for this quiz type.')),
+                      SnackBar(
+                        content: Text(
+                          'min required number of term is 4 for this quiz type.',
+                        ),
+                      ),
                     );
                   }
-                }
+                },
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  backgroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Start Quiz'),
               ),
               _buildNavigationButton(
                 context: context,
@@ -151,7 +276,7 @@ class _SetInsideState extends State<SetInside> {
           Expanded(
             child: SingleChildScrollView(
               child:
-              _buildFlashcardList(), // Display the list of all flashcards in a scrollable view
+                  _buildFlashcardList(), // Display the list of all flashcards in a scrollable view
             ),
           ),
         ],
@@ -198,14 +323,17 @@ class _SetInsideState extends State<SetInside> {
             right: 10,
             child: IconButton(
               icon: Icon(
-                flashcards[index]['fav'] ? Icons.favorite : Icons.favorite_border,
+                flashcards[index]['fav']
+                    ? Icons.favorite
+                    : Icons.favorite_border,
                 color: flashcards[index]['fav'] ? Colors.red : Colors.grey,
               ),
               onPressed: () {
                 setState(() {
                   flashcards[index]['fav'] =
-                  !flashcards[index]['fav']; // Toggle the favorite status
-                  _updateFavStatus(flashcards[index]['id'],flashcards[index]['fav']);
+                      !flashcards[index]['fav']; // Toggle the favorite status
+                  _updateFavStatus(
+                      flashcards[index]['id'], flashcards[index]['fav']);
                 });
                 final snackBar = SnackBar(
                   content: Text(flashcards[index]['fav']
@@ -227,7 +355,7 @@ class _SetInsideState extends State<SetInside> {
               onPressed: () {
                 setState(() {
                   showSetOptions =
-                  !showSetOptions; // Toggle visibility of set options
+                      !showSetOptions; // Toggle visibility of set options
                 });
               },
             ),
@@ -330,39 +458,39 @@ class _SetInsideState extends State<SetInside> {
           .entries
           .map(
             (entry) => ListTile(
-          title: Text(
-            entry.value['term']!,
-            style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color.fromARGB(221, 5, 5, 5)),
-          ),
-          subtitle: Text(
-            entry.value['definition']!,
-            style: const TextStyle(
-                fontSize: 16, color: Color.fromARGB(255, 198, 189, 189)),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Edit Button
-              IconButton(
-                icon: const Icon(Icons.edit,
-                    color: Color.fromARGB(255, 198, 189, 189)),
-                onPressed: () =>
-                    _editFlashcard(entry.key), // Call edit method
+              title: Text(
+                entry.value['term']!,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(221, 5, 5, 5)),
               ),
-              // Delete Button
-              IconButton(
-                icon: const Icon(Icons.delete,
-                    color: Color.fromARGB(255, 198, 189, 189)),
-                onPressed: () =>
-                    _deleteFlashcard(entry.key), // Call delete method
+              subtitle: Text(
+                entry.value['definition']!,
+                style: const TextStyle(
+                    fontSize: 16, color: Color.fromARGB(255, 198, 189, 189)),
               ),
-            ],
-          ),
-        ),
-      )
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Edit Button
+                  IconButton(
+                    icon: const Icon(Icons.edit,
+                        color: Color.fromARGB(255, 198, 189, 189)),
+                    onPressed: () =>
+                        _editFlashcard(entry.key), // Call edit method
+                  ),
+                  // Delete Button
+                  IconButton(
+                    icon: const Icon(Icons.delete,
+                        color: Color.fromARGB(255, 198, 189, 189)),
+                    onPressed: () =>
+                        _deleteFlashcard(entry.key), // Call delete method
+                  ),
+                ],
+              ),
+            ),
+          )
           .toList(),
     );
   }
@@ -408,11 +536,12 @@ class _SetInsideState extends State<SetInside> {
     VoidCallback? onPressed,
   }) {
     return ElevatedButton(
-      onPressed: onPressed ?? () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => targetPage),
-        );
-      },
+      onPressed: onPressed ??
+          () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => targetPage),
+            );
+          },
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.black,
         backgroundColor: Colors.white,
@@ -431,7 +560,7 @@ class _SetInsideState extends State<SetInside> {
       onPressed: () {
         setState(() {
           showDefinitions =
-          !showDefinitions; // Toggle showing words and edit button
+              !showDefinitions; // Toggle showing words and edit button
         });
       },
       style: ElevatedButton.styleFrom(
@@ -447,9 +576,12 @@ class _SetInsideState extends State<SetInside> {
   }
 
   void _editFlashcard(int index) {
-    final termController = TextEditingController(text: flashcards[index]['term']);
-    final definitionController = TextEditingController(text: flashcards[index]['definition']);
-    final flashcardID = flashcards[index]['id']; // Get the flashcard ID
+
+    final termController =
+        TextEditingController(text: flashcards[index]['term']);
+    final definitionController =
+        TextEditingController(text: flashcards[index]['definition']);
+
 
     showDialog(
       context: context,
@@ -502,8 +634,5 @@ class _SetInsideState extends State<SetInside> {
       },
     );
   }
-
-
-
-
 }
+
