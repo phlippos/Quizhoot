@@ -3,6 +3,7 @@ import 'package:quizhoot/pages/custom_bottom_nav.dart';
 import 'classroom_announcements.dart';
 import 'classroom_members.dart';
 import 'classroom_chat.dart';
+import 'classroom_folders.dart'; // Import the new Folder page
 
 class ClassroomInside extends StatefulWidget {
   const ClassroomInside({super.key});
@@ -19,7 +20,9 @@ class _ClassroomInsideState extends State<ClassroomInside>
   void initState() {
     super.initState();
     _tabController = TabController(
-        length: 3, vsync: this); // Initialize the TabController with 3 tabs
+        length: 4,
+        vsync: this,
+        initialIndex: 0); // Set initialIndex to 0 or a valid index
   }
 
   @override
@@ -40,6 +43,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
             Tab(text: 'Notice Board'), // Tab for Notice Board
             Tab(text: 'Members'), // Tab for Members
             Tab(text: 'Chat'), // Tab for Chat
+            Tab(text: 'Folders'), // New Tab for Folders
           ],
         ),
       ),
@@ -49,11 +53,11 @@ class _ClassroomInsideState extends State<ClassroomInside>
           ClassroomAnnouncements(), // Widget for Notice Board
           ClassroomMembers(), // Widget for Members
           ClassroomChat(), // Widget for Chat
+          ClassroomFolders(), // Widget for Folders
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(
-          initialIndex:
-              2), // Custom bottom navigation bar with initial index set to 2
+          initialIndex: 0), // Set the initialIndex correctly within the range
     );
   }
 }

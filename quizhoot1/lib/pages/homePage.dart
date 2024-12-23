@@ -48,18 +48,18 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
               // Option to create a quiz
-              ListTile(
-                leading: const Icon(Icons.quiz, color: Colors.orange),
-                title: const Text('Create Quiz'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const CreateQuizPage()),
-                  );
-                },
-              ),
+              // ListTile(
+              //   leading: const Icon(Icons.quiz, color: Colors.orange),
+              //   title: const Text('Create Quiz'),
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     Navigator.push(
+              //       context,
+              //       MaterialPageRoute(
+              //           builder: (context) => const CreateQuizPage()),
+              //     );
+              //   },
+              // ),
               // Option to create a folder
               ListTile(
                 leading: const Icon(Icons.folder_open, color: Colors.green),
@@ -98,7 +98,7 @@ class _HomePageState extends State<HomePage> {
     // Getting the screen height and width for responsive layout
     double height = MediaQuery.of(context).size.height;
     double width = MediaQuery.of(context).size.width;
-    User user = Provider.of<User>(context,listen:false);
+    User user = Provider.of<User>(context, listen: false);
     return Scaffold(
       backgroundColor: const Color(0xFF3A1078),
       body: Padding(
@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     Text(
-                       user.username,
+                      user.username,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
