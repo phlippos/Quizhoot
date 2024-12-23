@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'custom_top_nav.dart'; // Custom top navigation widget
 import 'custom_bottom_nav.dart'; // Custom bottom navigation widget
 import 'set_inside.dart'; // Imports the page to show individual set details
+import 'package:provider/provider.dart'; // For managing state and actions
 
 class FolderInside extends StatelessWidget {
   const FolderInside({super.key});
@@ -23,61 +24,67 @@ class FolderInside extends StatelessWidget {
   }
 }
 
-class SetContent extends StatelessWidget {
+class SetContent extends StatefulWidget {
   const SetContent({super.key});
+
+  @override
+  _SetContentState createState() => _SetContentState();
+}
+
+class _SetContentState extends State<SetContent> {
+  List<Set> sets = [
+    Set(name: 'Set 1', size: 5, creator: 'Creator A'),
+    Set(name: 'Set 2', size: 8, creator: 'Creator B'),
+  ];
+
+  // Delete set method
+  void _deleteSet(int index) {
+    setState(() {
+      sets.removeAt(index);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center, // Centers content vertically
-        children: [
-          SetCard(
-            setName: 'Set 1',
-            termCount: '5 Terms', // Number of terms in the set
-            createdBy: 'Creator A', // Set creator's name
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to set details page
-              );
-            },
-          ),
-          const SizedBox(height: 16), // Spacing between set cards
-          SetCard(
-            setName: 'Set 2',
-            termCount: '8 Terms',
-            createdBy: 'Creator B',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to set details page
-              );
-            },
-          ),
-        ],
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: sets.map((set) {
+          return Column(
+            children: [
+              SetCard(
+                  set: set,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SetInside(),
+                      ),
+                    );
+                  },
+                  onDelete: () => _deleteSet(sets.indexOf(set)),
+                  onEdit: () => {}),
+              const SizedBox(height: 16),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
 }
 
 class SetCard extends StatelessWidget {
-  final String setName; // Name of the set
-  final String termCount; // Number of terms in the set
-  final String createdBy; // Creator's name
-  final VoidCallback onTap; // Function to execute on tap
+  final Set set;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const SetCard({
     super.key,
-    required this.setName,
-    required this.termCount,
-    required this.createdBy,
+    required this.set,
     required this.onTap,
+    required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -99,35 +106,45 @@ class SetCard extends StatelessWidget {
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize
-              .min, // Makes column size minimum based on its children
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
-                const Icon(Icons.format_list_numbered,
-                    size: 40), // Icon for set
-                const SizedBox(width: 10), // Spacing between icon and text
-                Text(
-                  setName, // Displays set name
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                const Icon(Icons.format_list_numbered, size: 40),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    set.name,
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                    icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
+                    onPressed: () => {}
+                    //     // should be similar to flashcard_update.dart
+                    ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
+                  onPressed:
+                      onDelete, // Executes the onDelete function when pressed
                 ),
               ],
             ),
-            const SizedBox(height: 8), // Spacing between rows
+            const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.workspaces, size: 20), // Icon for term count
+                const Icon(Icons.workspaces, size: 20),
                 const SizedBox(width: 5),
-                Text(termCount), // Displays term count
+                Text(set.size.toString()),
               ],
             ),
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.account_circle, size: 20), // Icon for creator
+                const Icon(Icons.account_circle, size: 20),
                 const SizedBox(width: 5),
-                Text(createdBy), // Displays creator's name
+                Text(set.creator),
               ],
             ),
           ],
@@ -135,4 +152,13 @@ class SetCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// Assuming Set class definition
+class Set {
+  final String name;
+  final int size;
+  final String creator;
+
+  Set({required this.name, required this.size, required this.creator});
 }

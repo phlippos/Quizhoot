@@ -16,11 +16,11 @@ class ClassroomViewPage extends StatelessWidget {
       child: Scaffold(
         appBar: CustomTopNav(initialIndex: 2), // Custom top navigation bar
         body:
-        ClassroomContent(), // Main content of the page, which displays the classrooms
+            ClassroomContent(), // Main content of the page, which displays the classrooms
         backgroundColor:
-        Color(0xFF3A1078), // Background color for the entire page
+            Color(0xFF3A1078), // Background color for the entire page
         bottomNavigationBar:
-        CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
       ),
     );
   }
@@ -61,6 +61,13 @@ class _ClassroomContentState extends State<ClassroomContent> {
     });
   }
 
+  // Method to edit a classroom's name
+  void _editClassroom(int index, String newName) {
+    setState(() {
+      classrooms[index]['className'] = newName; // Update the classroom name
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -83,6 +90,8 @@ class _ClassroomContentState extends State<ClassroomContent> {
                   );
                 },
                 onDelete: () => _deleteClassroom(i), // Pass delete callback
+                onEdit: (newName) =>
+                    _editClassroom(i, newName), // Pass edit callback
               ),
             ),
           if (classrooms.isEmpty)
@@ -103,6 +112,7 @@ class ClassroomCard extends StatelessWidget {
   final String teacherName;
   final VoidCallback onTap;
   final VoidCallback onDelete; // New callback for deleting a classroom
+  final Function(String) onEdit; // Callback for editing
 
   const ClassroomCard({
     super.key,
@@ -111,6 +121,7 @@ class ClassroomCard extends StatelessWidget {
     required this.teacherName,
     required this.onTap,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -123,7 +134,7 @@ class ClassroomCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white, // Background color of the card
           borderRadius:
-          BorderRadius.circular(12), // Rounded corners for the card
+              BorderRadius.circular(12), // Rounded corners for the card
           boxShadow: const [
             BoxShadow(
               color: Colors.black26, // Shadow color
@@ -147,18 +158,14 @@ class ClassroomCard extends StatelessWidget {
                         fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
-                // Edit button - navigate to classroom creation page
+                // Edit button - show edit dialog
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateClassroomPage(),
-                      ),
-                    );
+                    _showEditDialog(context, className, onEdit);
                   },
                 ),
+                // Delete button
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
                   onPressed: onDelete, // Call delete function
@@ -187,6 +194,45 @@ class ClassroomCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // Show edit dialog to edit the classroom name
+  void _showEditDialog(
+      BuildContext context, String currentClassName, Function(String) onEdit) {
+    TextEditingController controller =
+        TextEditingController(text: currentClassName);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Classroom Name'),
+          content: TextField(
+            controller: controller,
+            decoration:
+                const InputDecoration(hintText: 'Enter new classroom name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                String newName = controller.text.trim();
+                if (newName.isNotEmpty) {
+                  onEdit(newName); // Call the onEdit callback with the new name
+                  Navigator.pop(context); // Close the dialog
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

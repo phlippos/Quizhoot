@@ -15,7 +15,7 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
   ]; // Sample list of members
   final String _teacherName = 'Teacher Name'; // Teacher's name
 
-  // Function to show a bottom sheet with options to add members or share the link
+  // Function to show a bottom sheet with options to add members, share the link, or leave classroom
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -47,6 +47,18 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
                     const SnackBar(
                         content: Text('Share Classroom Link clicked')),
                   );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.exit_to_app, color: Colors.red),
+                title: const Text('Leave Classroom'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // to:do
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Leave Classroom clicked')),
+                  );
+                  // Here, you can also add logic to remove the member from the classroom
                 },
               ),
             ],
