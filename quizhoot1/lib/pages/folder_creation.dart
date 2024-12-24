@@ -24,7 +24,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
 
   void _showFolderDialog() {
     TextEditingController folderNameController =
-    TextEditingController(); // Controller for the folder name input
+        TextEditingController(); // Controller for the folder name input
 
     showDialog(
       context: context,
@@ -54,7 +54,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
                       return CheckboxListTile(
                         title: Text(availableSets[index]), // Displays set name
                         value: setSelections[
-                        index], // Checks if the set is selected
+                            index], // Checks if the set is selected
                         onChanged: (bool? value) {
                           setState(() {
                             setSelections[index] =
@@ -114,7 +114,9 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:
+
           Text('Please provide a valid name and select at least one set.'),
+
           duration: Duration(seconds: 2),
         ),
       );

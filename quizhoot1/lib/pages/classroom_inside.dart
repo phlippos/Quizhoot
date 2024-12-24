@@ -6,6 +6,7 @@ import 'classroom_chat.dart';
 import 'classroom_folders.dart'; // Import the new Folder page
 import '../classes/Classroom.dart';
 
+
 class ClassroomInside extends StatefulWidget {
   const ClassroomInside({super.key});
 
@@ -26,11 +27,13 @@ class _ClassroomInsideState extends State<ClassroomInside>
         length: 4,
         vsync: this,
         initialIndex: 0); // Set initialIndex to 0 or a valid index
+
   }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _classroom = ModalRoute.of(context)?.settings.arguments as Classroom;
+
   }
 
   @override
@@ -75,6 +78,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(initialIndex: 0),
+
     );
   }
 }

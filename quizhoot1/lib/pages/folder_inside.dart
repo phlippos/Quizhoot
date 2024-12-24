@@ -122,6 +122,7 @@ class SetCard extends StatelessWidget {
                 IconButton(
                     icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
                     onPressed: () => {}
+
                   //     // should be similar to flashcard_update.dart
                 ),
                 IconButton(
@@ -161,4 +162,5 @@ class Set {
   final String creator;
 
   Set({required this.name, required this.size, required this.creator});
+
 }
