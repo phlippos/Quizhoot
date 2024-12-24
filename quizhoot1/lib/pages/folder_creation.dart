@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quizhoot/classes/Folder.dart';
+import 'package:quizhoot/classes/Set.dart';
+import 'package:quizhoot/classes/User.dart';
 
 class CreateFolderPage extends StatefulWidget {
   const CreateFolderPage({super.key});
@@ -8,82 +12,93 @@ class CreateFolderPage extends StatefulWidget {
 }
 
 class _CreateFolderPageState extends State<CreateFolderPage> {
-  final List<String> availableSets = [
-    'Set 1',
-    'Set 2',
-    'Set 3',
-    'Set 4'
-  ]; // List of available sets
-  final List<bool> setSelections = [
-    false,
-    false,
-    false,
-    false
-  ]; // Tracks selected sets
-  String folderName = ''; // Stores the folder name entered by the user
+  final List<bool> setSelections = [];
+  late List<Set> availableSets = [];
+  String folderName = '';
+  bool isCreating = false;
+  Folder? createdFolder;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvailableSets();
+  }
+
+  Future<void> _loadAvailableSets() async {
+    final user = Provider.of<User>(context, listen: false);
+
+    try {
+      await user.fetchSets();  // Fetch sets from server
+      setState(() {
+        availableSets = user.getSets();
+        setSelections.clear();
+        setSelections.addAll(List<bool>.filled(availableSets.length, false));
+      });
+    } catch (e) {
+      print('Error loading sets: $e');
+    }
+  }
 
   void _showFolderDialog() {
-    TextEditingController folderNameController =
-    TextEditingController(); // Controller for the folder name input
+    final folderNameController = TextEditingController(text: folderName);
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Create Folder'), // Dialog title
+          title: const Text('Create Folder'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
-                  controller: folderNameController, // Folder name input
-                  onChanged: (value) {
-                    folderName = value;
-                  },
+                  controller: folderNameController,
+                  onChanged: (value) => folderName = value,
                   decoration: const InputDecoration(
-                    labelText: 'Folder Name', // Placeholder for folder name
-                    border: OutlineInputBorder(), // Input border style
+                    labelText: 'Folder Name',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 10), // Spacing between input and text
-                const Text(
-                    'Select Sets to Add'), // Instruction for selecting sets
-                ...List.generate(availableSets.length, (index) {
-                  return StatefulBuilder(
-                    builder: (context, setState) {
-                      return CheckboxListTile(
-                        title: Text(availableSets[index]), // Displays set name
-                        value: setSelections[
-                        index], // Checks if the set is selected
-                        onChanged: (bool? value) {
-                          setState(() {
-                            setSelections[index] =
-                                value ?? false; // Updates selection state
-                          });
-                        },
-                      );
-                    },
-                  );
-                }),
+                const SizedBox(height: 10),
+                const Text('Select Sets to Add'),
+                Consumer<User>(
+                  builder: (context, user, child) {
+                    return Column(
+                      children: List.generate(availableSets.length, (index) {
+                        return CheckboxListTile(
+                          title: Text(availableSets[index].name),
+                          value: setSelections[index],
+                          onChanged: (bool? value) {
+                            setState(() {
+                              setSelections[index] = value ?? false;
+                            });
+                          },
+                        );
+                      }),
+                    );
+                  },
+                ),
               ],
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Closes the dialog without saving
-              },
-              child: const Text('Cancel'), // Cancel button text
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
+                Navigator.pop(context);
+
                 setState(() {
-                  folderName =
-                      folderNameController.text; // Sets the folder name
+                  folderName = folderNameController.text.trim();
                 });
-                Navigator.pop(context); // Closes the dialog after saving
+
+                if (folderName.isNotEmpty) {
+                  await _createFolderAndAddSets(folderName);
+                }
               },
-              child: const Text('Create'), // Create button text
+              child: const Text('Create'),
             ),
           ],
         );
@@ -91,82 +106,79 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
     );
   }
 
-  void _saveFolder() {
-    // Save functionality
-    List<String> selectedSets = setSelections
-        .asMap()
-        .entries
-        .where((entry) => entry.value)
-        .map((entry) => availableSets[entry.key])
-        .toList();
+  Future<void> _createFolderAndAddSets(String name) async {
+    setState(() => isCreating = true);
 
-    if (folderName.isNotEmpty && selectedSets.isNotEmpty) {
-      // Show a snackbar with folder name and selected sets
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              'Folder "$folderName" with sets ${selectedSets.join(', ')} saved!'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // Show an error snackbar if folder name or selected sets are missing
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-          Text('Please provide a valid name and select at least one set.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    try {
+      Folder newFolder = Folder.create(name);
+      await newFolder.add();
+
+      final user = Provider.of<User>(context, listen: false);
+      for (int i = 0; i < setSelections.length; i++) {
+        if (setSelections[i]) {
+          final selectedSet = availableSets[i];
+          await newFolder.addSetToFolder(selectedSet);
+        }
+      }
+
+      setState(() {
+        createdFolder = newFolder;
+        isCreating = false;
+      });
+    } catch (e) {
+      print('Error creating folder or adding sets: $e');
+      setState(() => isCreating = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF3A1078), // Background color of the page
+      backgroundColor: const Color(0xFF3A1078),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF3A1078), // AppBar background color
-        title: const Text('Folder Creation'), // AppBar title
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save), // Save icon
-            onPressed: _saveFolder, // Trigger save functionality on press
-          ),
-        ],
+        backgroundColor: const Color(0xFF3A1078),
+        title: const Text('Folder Creation'),
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Centers the column
+        child: isCreating
+            ? const CircularProgressIndicator()
+            : Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (folderName.isNotEmpty) ...[
-              // Checks if a folder name exists
-              Text(
-                'Folder: $folderName', // Displays folder name
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
-              const SizedBox(
-                  height: 10), // Spacing between folder name and sets
-              Text(
-                'Selected Sets: ${setSelections.asMap().entries.where((entry) => entry.value).map((entry) => availableSets[entry.key]).join(', ')}',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16), // Displays selected sets
-              ),
-            ] else
+            if (createdFolder == null) ...[
               const Text(
-                'No folder created yet', // Message when no folder is created
+                'No folder created yet',
                 style: TextStyle(color: Colors.white, fontSize: 18),
               ),
+            ] else ...[
+              Text(
+                'Folder: ${createdFolder!.name}',
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Selected Sets: ${_formatSelectedSets()}',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showFolderDialog, // Opens dialog to create folder
-        backgroundColor:
-        const Color.fromARGB(255, 237, 234, 240), // Button background color
-        child: const Icon(Icons.add), // Icon for the floating button
+        onPressed: _showFolderDialog,
+        backgroundColor: const Color.fromARGB(255, 237, 234, 240),
+        child: const Icon(Icons.add),
       ),
     );
+  }
+
+  String _formatSelectedSets() {
+    final selectedNames = <String>[];
+    for (int i = 0; i < setSelections.length; i++) {
+      if (setSelections[i]) {
+        selectedNames.add(availableSets[i].name);
+      }
+    }
+    return selectedNames.join(', ');
   }
 }

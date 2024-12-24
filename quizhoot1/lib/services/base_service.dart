@@ -48,6 +48,15 @@ abstract class BaseService {
     'classroom-members-list': 'classrooms_user/members_list/<int:classroom_id>/',
     'classroom-user-add-user': 'classrooms_user/add_user_2_classroom/',
 
+    // Folder routes
+    'create-folder': 'folders/create/',
+    'list-folders': 'folders/list/',
+    'rename-folder': 'folders/<int:pk>/rename/',
+    'folder-detail': 'folders/<int:pk>/', // for GET, PUT, DELETE
+    'add-set-to-folder': 'folders/<int:pk>/add_set/',
+    'remove-set-from-folder': 'folders/<int:pk>/remove_set/<int:set_id>/',
+    'list-sets-in-folder': 'folders/<int:pk>/sets/',
+
   });
 
 

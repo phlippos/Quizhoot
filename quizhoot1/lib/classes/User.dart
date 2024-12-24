@@ -168,4 +168,12 @@ class User with ChangeNotifier {
       throw Exception('Failed to load data');
     }
   }
+
+  Future<void> fetchSets() async{
+    List<Map<String, dynamic>> fetchedSets = await Set.fetchSets();
+    fetchedSets.forEach((set){
+      addComponent(Set(set["id"],set["set_name"], set["size"]));
+    });
+  }
+
 }

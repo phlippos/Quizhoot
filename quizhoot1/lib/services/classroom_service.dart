@@ -75,7 +75,7 @@ class ClassroomService extends BaseService {
 
   Future<http.Response> fetchMembersOfClassroom(int classroomID) async{
     final response = await http.get(
-      Uri.parse('http://10.0.2.2:8000/api/classrooms_user/members_list/$classroomID/'),
+      Uri.parse(getLink('classroom-members-list',{'<int:classroom_id>':'$classroomID'})!),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Token ${await AuthService.instance.getToken()}',
@@ -84,8 +84,7 @@ class ClassroomService extends BaseService {
     print(response.statusCode);
     return response;
   }
-  
-  
+
   Future<http.Response> joinClassroom(int classroomID) async{
     print(getLink('classroom-user-add-user'));
     final response = await http.post(
@@ -99,7 +98,6 @@ class ClassroomService extends BaseService {
         jsonEncode({
           'classroom_id': classroomID
         })
-
     );
     return response;
   }

@@ -50,11 +50,7 @@ class _SetContentState extends State<SetContent> {
 
   Future<void> _fetchSets(User user) async {
     try {
-      List<Map<String, dynamic>> fetchedSets = await Set.fetchSets();
-
-      fetchedSets.forEach((set){
-        user.addComponent(Set(set["id"],set["set_name"], set["size"]));
-      });
+      await user.fetchSets();
       setState(() {
         _isLoading = false; // Update loading state when data is fetched
       });
