@@ -40,7 +40,9 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
   }
 
   void _showFolderDialog() {
+
     final folderNameController = TextEditingController(text: folderName);
+
 
     showDialog(
       context: context,
