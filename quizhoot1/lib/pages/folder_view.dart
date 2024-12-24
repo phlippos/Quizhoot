@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'folder_inside.dart';
-import 'folder_creation.dart'; // Import flashcard creation page
 
 class FolderViewPage extends StatelessWidget {
   const FolderViewPage({super.key});
@@ -31,7 +30,7 @@ class FolderContent extends StatefulWidget {
 
 class _FolderContentState extends State<FolderContent> {
   // List of folders
-  final List<Map<String, String>> folders = [
+  List<Map<String, String>> folders = [
     {'folderName': 'Folder 1', 'itemCount': '10 Items', 'createdBy': 'User A'},
     {'folderName': 'Folder 2', 'itemCount': '15 Items', 'createdBy': 'User B'},
     {'folderName': 'Folder 3', 'itemCount': '20 Items', 'createdBy': 'User C'},
@@ -42,6 +41,50 @@ class _FolderContentState extends State<FolderContent> {
     setState(() {
       folders.removeAt(index); // Remove the folder at the specified index
     });
+  }
+
+  // Method to show the edit dialog
+  void _editFolder(int index) async {
+    TextEditingController _nameController = TextEditingController(
+        text: folders[index]['folderName']); // Pre-fill with current name
+
+    // Show dialog to edit the folder name
+    String? newFolderName = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Folder Name'),
+          content: TextField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              hintText: 'Enter new folder name',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog without saving
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context)
+                    .pop(_nameController.text); // Return new name
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    // If the user provided a new folder name, update the folder list
+    if (newFolderName != null && newFolderName.isNotEmpty) {
+      setState(() {
+        folders[index]['folderName'] = newFolderName; // Update the folder name
+      });
+    }
   }
 
   @override
@@ -65,7 +108,8 @@ class _FolderContentState extends State<FolderContent> {
                     ),
                   );
                 },
-                onDelete: () => _deleteFolder(i), // Pass delete callback
+                onDelete: () => _deleteFolder(i), // Delete callback
+                onEdit: () => _editFolder(i), // Edit callback
               ),
             ),
           if (folders.isEmpty)
@@ -84,7 +128,8 @@ class FolderCard extends StatelessWidget {
   final String itemCount;
   final String createdBy;
   final VoidCallback onTap;
-  final VoidCallback onDelete; // New callback for deleting a folder
+  final VoidCallback onDelete;
+  final VoidCallback onEdit; // Edit callback
 
   const FolderCard({
     super.key,
@@ -93,6 +138,7 @@ class FolderCard extends StatelessWidget {
     required this.createdBy,
     required this.onTap,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -127,22 +173,13 @@ class FolderCard extends StatelessWidget {
                         fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
-                // Edit button - navigate to folder creation page
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateFolderPage(),
-                      ),
-                    );
-                  },
+                  onPressed: onEdit, // Open edit dialog
                 ),
-                // Delete button - call the delete function
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
-                  onPressed: onDelete, // Call delete function
+                  onPressed: onDelete,
                 ),
               ],
             ),

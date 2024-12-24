@@ -9,3 +9,7 @@ export 'quiz_view.dart';
 export 'set_inside.dart';
 export 'set_view.dart';
 export 'signUpPage.dart';
+export 'classroom_creation.dart';
+export 'classroom_view.dart';
+export 'classroom_inside.dart';
+export 'classroom_members.dart';

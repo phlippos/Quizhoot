@@ -91,6 +91,36 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
     );
   }
 
+  void _saveFolder() {
+    // Save functionality
+    List<String> selectedSets = setSelections
+        .asMap()
+        .entries
+        .where((entry) => entry.value)
+        .map((entry) => availableSets[entry.key])
+        .toList();
+
+    if (folderName.isNotEmpty && selectedSets.isNotEmpty) {
+      // Show a snackbar with folder name and selected sets
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              'Folder "$folderName" with sets ${selectedSets.join(', ')} saved!'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Show an error snackbar if folder name or selected sets are missing
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+          Text('Please provide a valid name and select at least one set.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -98,6 +128,12 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF3A1078), // AppBar background color
         title: const Text('Folder Creation'), // AppBar title
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save), // Save icon
+            onPressed: _saveFolder, // Trigger save functionality on press
+          ),
+        ],
       ),
       body: Center(
         child: Column(
@@ -128,7 +164,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showFolderDialog, // Opens dialog to create folder
         backgroundColor:
-            const Color.fromARGB(255, 237, 234, 240), // Button background color
+        const Color.fromARGB(255, 237, 234, 240), // Button background color
         child: const Icon(Icons.add), // Icon for the floating button
       ),
     );
