@@ -1,133 +1,259 @@
 import 'package:flutter/material.dart';
 import 'custom_top_nav.dart'; // Custom top navigation widget
 import 'custom_bottom_nav.dart'; // Custom bottom navigation widget
-import 'set_inside.dart'; // Imports the page to show individual set details
+import 'set_inside.dart'; // Page showing individual set details
 
-class FolderInside extends StatelessWidget {
-  const FolderInside({super.key});
+import 'package:quizhoot/classes/Folder.dart';
+import 'package:quizhoot/classes/Set.dart';
+import 'package:provider/provider.dart';
+import 'package:quizhoot/classes/User.dart';
+
+class FolderInside extends StatefulWidget {
+  final Folder folder;
+
+  const FolderInside({super.key, required this.folder});
+
+  @override
+  State<FolderInside> createState() => _FolderInsideState();
+}
+
+class _FolderInsideState extends State<FolderInside> {
+  bool _isLoading = true;
+  bool _hasError = false;
+  List<Set> _sets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchFolderSets();
+  }
+
+  /// Fetch sets from the server for this folder
+  Future<void> _fetchFolderSets() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      // fetchSetsInFolder() is a method from your Folder class
+      // that calls the server to get sets for a specific folder.
+      final folderSets = await widget.folder.fetchSetsInFolder();
+      setState(() {
+        _sets = folderSets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching sets for folder: $e");
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  Future<void> _deleteSet(Set set) async {
+    try {
+      await widget.folder.removeSetFromFolder(
+          set); // Assume delete() is a method in the Set class that deletes the set
+      setState(() {
+        _sets.remove(set);
+      });
+    } catch (e) {
+      print("Error deleting set: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete set')),
+      );
+    }
+  }
+
+  void _showAddSetDialog() {
+    List<Set> availableSets = [];
+    List<bool> setSelections = [];
+
+    void _loadAvailableSets() async {
+      final user = Provider.of<User>(context, listen: false);
+      try {
+        await user.fetchSets();
+        setState(() {
+          availableSets = user.getSets();
+          setSelections = List<bool>.filled(availableSets.length, false);
+        });
+      } catch (e) {
+        print('Error loading sets: $e');
+      }
+    }
+
+    _loadAvailableSets();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Sets'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(availableSets.length, (index) {
+                return CheckboxListTile(
+                  title: Text(availableSets[index].name),
+                  value: setSelections[index],
+                  onChanged: (bool? value) {
+                    setState(() {
+                      setSelections[index] = value ?? false;
+                    });
+                  },
+                );
+              }),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                for (int i = 0; i < setSelections.length; i++) {
+                  if (setSelections[i]) {
+                    await widget.folder.addSetToFolder(availableSets[i]);
+                  }
+                }
+                _fetchFolderSets();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const DefaultTabController(
-      length: 3, // Defines the number of tabs
+    return DefaultTabController(
+      length: 3, // Number of tabs
       initialIndex: 1, // Sets the initial tab index
       child: Scaffold(
-        appBar: CustomTopNav(
-            initialIndex: 1), // Custom top navigation bar with a specific index
-        body: SetContent(), // Body content with a list of sets
-        backgroundColor: Color(0xFF3A1078), // Background color for the scaffold
-        bottomNavigationBar:
-            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+        appBar: const CustomTopNav(initialIndex: 1),
+        backgroundColor: const Color(0xFF3A1078),
+        bottomNavigationBar: const CustomBottomNav(initialIndex: 2),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _hasError
+                ? const Center(
+                    child: Text(
+                      'Error loading folder sets.',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  )
+                : _sets.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No sets found in this folder.',
+                          style: TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                      )
+                    : SetListView(sets: _sets, onDelete: _deleteSet),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAddSetDialog,
+          backgroundColor: Colors.white,
+          child: const Icon(Icons.add, color: Colors.blue),
+        ),
       ),
     );
   }
 }
 
-class SetContent extends StatelessWidget {
-  const SetContent({super.key});
+class SetListView extends StatelessWidget {
+  final List<Set> sets;
+  final Function(Set) onDelete;
+
+  const SetListView({super.key, required this.sets, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center, // Centers content vertically
-        children: [
-          SetCard(
-            setName: 'Set 1',
-            termCount: '5 Terms', // Number of terms in the set
-            createdBy: 'Creator A', // Set creator's name
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to set details page
-              );
-            },
-          ),
-          const SizedBox(height: 16), // Spacing between set cards
-          SetCard(
-            setName: 'Set 2',
-            termCount: '8 Terms',
-            createdBy: 'Creator B',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to set details page
-              );
-            },
-          ),
-        ],
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      itemCount: sets.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 16),
+      itemBuilder: (ctx, index) {
+        final setData = sets[index];
+        return SetCard(
+          setName: setData.name,
+          termCount: '${setData.size} Terms',
+          onTap: () {
+            // Navigate to the SetInside page (pass the set as an argument)
+            Navigator.pushNamed(context, '/setInside', arguments: setData);
+          },
+          onDelete: () => onDelete(setData),
+        );
+      },
     );
   }
 }
 
 class SetCard extends StatelessWidget {
-  final String setName; // Name of the set
-  final String termCount; // Number of terms in the set
-  final String createdBy; // Creator's name
-  final VoidCallback onTap; // Function to execute on tap
+  final String setName;
+  final String termCount;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const SetCard({
     super.key,
     required this.setName,
     required this.termCount,
-    required this.createdBy,
     required this.onTap,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap, // Executes the onTap function when tapped
+      onTap: onTap, // Execute the onTap function when tapped
       child: Container(
-        width: 300, // Width of the card
-        padding: const EdgeInsets.all(16), // Padding inside the card
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white, // Card background color
-          borderRadius: BorderRadius.circular(12), // Rounded corners
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
-              color: Colors.black26, // Shadow color
-              blurRadius: 8, // Shadow blur effect
-              offset: Offset(0, 2), // Shadow position
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize
-              .min, // Makes column size minimum based on its children
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.format_list_numbered,
-                    size: 40), // Icon for set
-                const SizedBox(width: 10), // Spacing between icon and text
-                Text(
-                  setName, // Displays set name
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                const Icon(Icons.format_list_numbered, size: 40),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    setName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: onDelete,
                 ),
               ],
             ),
-            const SizedBox(height: 8), // Spacing between rows
+            const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.workspaces, size: 20), // Icon for term count
+                const Icon(Icons.workspaces, size: 20),
                 const SizedBox(width: 5),
-                Text(termCount), // Displays term count
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.account_circle, size: 20), // Icon for creator
-                const SizedBox(width: 5),
-                Text(createdBy), // Displays creator's name
+                Text(termCount),
               ],
             ),
           ],
