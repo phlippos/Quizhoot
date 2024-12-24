@@ -32,6 +32,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
     super.dispose();
   }
 
+  final int classroomId = 1;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,10 +50,10 @@ class _ClassroomInsideState extends State<ClassroomInside>
       ),
       body: TabBarView(
         controller: _tabController, // Set the controller to the TabBarView
-        children: const [
+        children: [
           ClassroomAnnouncements(), // Widget for Notice Board
           ClassroomMembers(), // Widget for Members
-          ClassroomChat(), // Widget for Chat
+          ClassroomChat(classroomId: classroomId), // Widget for Chat
           ClassroomFolders(), // Widget for Folders
         ],
       ),

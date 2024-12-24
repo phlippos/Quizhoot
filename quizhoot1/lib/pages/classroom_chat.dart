@@ -1,137 +1,190 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../classes/Chat_message.dart';
+import '../services/chat_service.dart';
+import '../classes/User.dart';
 
 class ClassroomChat extends StatefulWidget {
-  const ClassroomChat({super.key});
+  final int classroomId;
+
+  const ClassroomChat({
+    super.key,
+    required this.classroomId,
+  });
 
   @override
   _ClassroomChatState createState() => _ClassroomChatState();
 }
 
 class _ClassroomChatState extends State<ClassroomChat> {
-  // List to store messages and their senders
-  final List<Map<String, String>> _messages = [
-    {"sender": "Teacher", "text": "Welcome to the class chat!"},
-    {"sender": "Abdullah", "text": "Hello everyone!"},
-    {"sender": "Baba", "text": "Hi! Looking forward to learning together."},
-  ];
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final List<ChatMessage> _messages = [];
+  late final ChatService _chatService;
+  late final User _currentUser;
+  bool _isLoading = true;
 
-  // Controller to manage the message input field
-  final TextEditingController _controller = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _chatService = ChatService.instance;
+    _currentUser = Provider.of<User>(context, listen: false);
+    _initializeChat();
+  }
 
-  // Function to send a message and add it to the message list
-  void _sendMessage() {
-    if (_controller.text.isNotEmpty) {
+  Future<void> _initializeChat() async {
+    try {
+      // Load message history
+      final messages = await _chatService.getMessageHistory(widget.classroomId);
       setState(() {
-        // Adds a new message with "Me" as the sender
-        _messages.add({
-          "sender": "Me",
-          "text": _controller.text,
-        });
-        _controller.clear(); // Clears the input field after sending
+        _messages.addAll(messages);
+        _isLoading = false;
       });
+
+      // Connect to WebSocket
+      await _chatService.connectToChat(widget.classroomId);
+      _chatService.messageStream.listen(_handleNewMessage);
+    } catch (e) {
+      _showError('Failed to initialize chat: $e');
     }
+  }
+
+  void _handleNewMessage(ChatMessage message) {
+    setState(() {
+      _messages.add(message);
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    try {
+      await _chatService.sendMessage(
+        widget.classroomId,
+        _messageController.text.trim(),
+      );
+      _messageController.clear();
+    } catch (e) {
+      _showError('Failed to send message: $e');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _chatService.dispose();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Classroom Chat'), // AppBar title
-        backgroundColor: const Color(0xFF3A1078),
-      ),
-      backgroundColor:
-          const Color(0xFF3A1078), // Background color for the chat screen
-      body: Column(
-        children: [
-          // Expanded widget to display the list of messages
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _messages.length, // Total number of messages
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // CircleAvatar showing the initial of the sender
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.grey,
-                      child: Text(
-                        message["sender"]![
-                            0], // Displaying the first letter of the sender
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(
-                        width: 10), // Spacing between avatar and message box
-                    Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 5),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white, // Message bubble color
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Displaying sender name in bold
-                            Text(
-                              message["sender"]!,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF3A1078),
-                              ),
-                            ),
-                            const SizedBox(
-                                height:
-                                    5), // Spacing between sender name and message text
-                            // Displaying message text
-                            Text(
-                              message["text"]!,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF3A1078),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          // Input area for typing a new message
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
+      backgroundColor: const Color(0xFF3A1078),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                // TextField to enter message text
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText:
-                          'Enter your message...', // Hint text for the input field
-                      border: InputBorder.none,
-                    ),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      return MessageBubble(
+                        message: message,
+                        isMe: message.senderId == _currentUser.id.toString(),
+                      );
+                    },
                   ),
                 ),
-                // Send button to send the message
-                IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFF3A1078)),
-                  onPressed:
-                      _sendMessage, // Calls _sendMessage function on press
-                ),
+                _buildMessageInput(),
               ],
             ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.attach_file),
+            onPressed: () {
+              // TODO: Implement file attachment
+            },
+          ),
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: const InputDecoration(
+                hintText: 'Type a message...',
+                border: InputBorder.none,
+              ),
+              onSubmitted: (_) => _sendMessage(),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: _sendMessage,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  final ChatMessage message;
+  final bool isMe;
+
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blue[100] : Colors.grey[300],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message.content),
+            Text(
+              '${message.timestamp.hour}:${message.timestamp.minute}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }
