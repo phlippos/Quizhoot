@@ -2,51 +2,80 @@ import 'package:flutter/material.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'folder_inside.dart';
+import 'folder_creation.dart';
+import 'package:quizhoot/classes/Folder.dart';  // <-- Your Folder model
 
-class FolderViewPage extends StatelessWidget {
+class FolderViewPage extends StatefulWidget {
   const FolderViewPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const DefaultTabController(
-      length: 3,
-      initialIndex: 1,
-      child: Scaffold(
-        appBar: CustomTopNav(initialIndex: 1),
-        body: FolderContent(),
-        backgroundColor: Color(0xFF3A1078),
-        bottomNavigationBar: CustomBottomNav(initialIndex: 2),
-      ),
-    );
-  }
+  State<FolderViewPage> createState() => _FolderViewPageState();
 }
 
-class FolderContent extends StatefulWidget {
-  const FolderContent({super.key});
+class _FolderViewPageState extends State<FolderViewPage> {
+  bool _isLoading = true;
+  bool _hasError = false;
+  List<Folder> _folders = [];
 
   @override
-  _FolderContentState createState() => _FolderContentState();
-}
+  void initState() {
+    super.initState();
+    _fetchFolders();
+  }
 
-class _FolderContentState extends State<FolderContent> {
-  // List of folders
-  List<Map<String, String>> folders = [
-    {'folderName': 'Folder 1', 'itemCount': '10 Items', 'createdBy': 'User A'},
-    {'folderName': 'Folder 2', 'itemCount': '15 Items', 'createdBy': 'User B'},
-    {'folderName': 'Folder 3', 'itemCount': '20 Items', 'createdBy': 'User C'},
-  ];
-
-  // Method to delete a folder
-  void _deleteFolder(int index) {
+  /// Fetch folders from the server (or any data source).
+  Future<void> _fetchFolders() async {
     setState(() {
-      folders.removeAt(index); // Remove the folder at the specified index
+      _isLoading = true;
+      _hasError = false;
+    });
+    try {
+      // If your Folder class has a static method like fetchFolders()
+      final fetchedFolders = await Folder.fetchFolders();
+      setState(() {
+        _folders = fetchedFolders;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching folders: $e");
+      setState(() {
+        _hasError = true;
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// Deletes a folder both on server and locally
+  Future<void> _deleteFolder(Folder folder) async {
+    try {
+      // If your Folder class has a remove() method
+      await folder.remove();
+      setState(() {
+        _folders.remove(folder);
+      });
+    } catch (e) {
+      print("Error deleting folder: $e");
+      // Optionally show a snackbar or dialog
+    }
+  }
+
+  /// Navigate to folder creation page to create a new folder
+  void _goToCreateFolder() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CreateFolderPage(),
+      ),
+    ).then((_) {
+      // Refresh the folder list after returning from creation page
+      _fetchFolders();
     });
   }
 
-  // Method to show the edit dialog
+  /// Method to show the edit dialog
   void _editFolder(int index) async {
     TextEditingController _nameController = TextEditingController(
-        text: folders[index]['folderName']); // Pre-fill with current name
+        text: _folders[index].name); // Pre-fill with current name
 
     // Show dialog to edit the folder name
     String? newFolderName = await showDialog<String>(
@@ -69,8 +98,7 @@ class _FolderContentState extends State<FolderContent> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.of(context)
-                    .pop(_nameController.text); // Return new name
+                Navigator.of(context).pop(_nameController.text); // Return new name
               },
               child: const Text('Save'),
             ),
@@ -82,67 +110,120 @@ class _FolderContentState extends State<FolderContent> {
     // If the user provided a new folder name, update the folder list
     if (newFolderName != null && newFolderName.isNotEmpty) {
       setState(() {
-        folders[index]['folderName'] = newFolderName; // Update the folder name
+        _folders[index].name = newFolderName; // Update the folder name
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      initialIndex: 1,
+      child: Scaffold(
+        appBar: const CustomTopNav(initialIndex: 1),
+        backgroundColor: const Color(0xFF3A1078),
+        bottomNavigationBar: const CustomBottomNav(initialIndex: 2),
+
+        // Show different UI based on loading/error states
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _hasError
+            ? const Center(
+          child: Text(
+            'Error loading folders.',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+        )
+            : _folders.isEmpty
+            ? const Center(
+          child: Text(
+            'No folders available.',
+            style: TextStyle(color: Colors.white, fontSize: 18),
+          ),
+        )
+            : FolderListView(
+          folders: _folders,
+          onDeleteFolder: _deleteFolder,
+          onEditFolder: _editFolder,
+        ),
+
+        // Button to create a new folder
+        floatingActionButton: FloatingActionButton(
+          onPressed: _goToCreateFolder,
+          backgroundColor: const Color.fromARGB(255, 237, 234, 240),
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+}
+
+class FolderListView extends StatelessWidget {
+  final List<Folder> folders;
+  final void Function(Folder folder) onDeleteFolder;
+  final void Function(int index) onEditFolder;
+
+  const FolderListView({
+    super.key,
+    required this.folders,
+    required this.onDeleteFolder,
+    required this.onEditFolder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          for (int i = 0; i < folders.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: FolderCard(
-                folderName: folders[i]['folderName']!,
-                itemCount: folders[i]['itemCount']!,
-                createdBy: folders[i]['createdBy']!,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const FolderInside(),
-                    ),
-                  );
-                },
-                onDelete: () => _deleteFolder(i), // Delete callback
-                onEdit: () => _editFolder(i), // Edit callback
-              ),
+        children: folders.asMap().entries.map((entry) {
+          int index = entry.key;
+          Folder folder = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
+            child: FolderCard(
+              folder: folder,
+              onTap: () {
+                // Navigate to folder details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FolderInside(folder: folder),
+                  ),
+                );
+              },
+              onEdit: () => onEditFolder(index),
+              onDelete: () => onDeleteFolder(folder),
             ),
-          if (folders.isEmpty)
-            const Text(
-              'No folders available.',
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-        ],
+          );
+        }).toList(),
       ),
     );
   }
 }
 
 class FolderCard extends StatelessWidget {
-  final String folderName;
-  final String itemCount;
-  final String createdBy;
+  final Folder folder;
   final VoidCallback onTap;
+  final VoidCallback onEdit;
   final VoidCallback onDelete;
-  final VoidCallback onEdit; // Edit callback
 
   const FolderCard({
     super.key,
-    required this.folderName,
-    required this.itemCount,
-    required this.createdBy,
+    required this.folder,
     required this.onTap,
-    required this.onDelete,
     required this.onEdit,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    // For display purposes, we assume folder has:
+    // - folder.name
+    // - folder.createdBy or some similar property
+    // - a method to get item count: e.g. folder.sets.length or folder.itemCount
+    final itemCount = folder.size; // If sets are eagerly loaded
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -168,15 +249,19 @@ class FolderCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    folderName,
+                    folder.name,
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
+                // Edit button
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
-                  onPressed: onEdit, // Open edit dialog
+                  onPressed: onEdit,
                 ),
+                // Delete button
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
                   onPressed: onDelete,
@@ -188,15 +273,7 @@ class FolderCard extends StatelessWidget {
               children: [
                 const Icon(Icons.category, size: 20),
                 const SizedBox(width: 5),
-                Text(itemCount),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.person, size: 20),
-                const SizedBox(width: 5),
-                Text(createdBy),
+                Text('$itemCount Items'),
               ],
             ),
           ],

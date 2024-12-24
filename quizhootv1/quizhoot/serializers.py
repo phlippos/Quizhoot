@@ -90,6 +90,7 @@ class FolderSerializer(serializers.ModelSerializer):
         queryset=Set.objects.all(), 
         required=False
     )
+    
     class Meta:
         model = Folder
         fields = ['id', 'user_id', 'folder_name', 'sets']

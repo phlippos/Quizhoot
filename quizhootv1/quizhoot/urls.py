@@ -51,11 +51,14 @@ urlpatterns = [
     path('classrooms/update/<int:pk>/', ClassroomViewSet.as_view({'put': 'update_classroom'}), name='update_classroom'),
     
     
-        # Folder routes
-    path('folders/create/<int:user_id>/', FolderViewSet.as_view({'post': 'create_folder'}), name='create_folder'),
-    path('folders/list/<int:user_id>/', FolderViewSet.as_view({'get': 'list_folders'}), name='list_folders'),
+    # Folder routes
+    path('folders/create/', FolderViewSet.as_view({'post': 'create_folder'}), name='create_folder'),
+    path('folders/list/', FolderViewSet.as_view({'get': 'list_folders'}), name='list_folders'),
     path('folders/<int:pk>/rename/', FolderViewSet.as_view({'put': 'rename_folder'}), name='rename_folder'),
-    path('folders/<int:pk>/', FolderViewSet.as_view({'get': 'retrieve', 'delete': 'destroy', 'put': 'update'}), name='folder_detail')
+    path('folders/<int:pk>/', FolderViewSet.as_view({'get': 'retrieve','delete': 'destroy','put': 'update'}), name='folder_detail'),
+    path('folders/<int:pk>/add_set/', FolderViewSet.as_view({'post': 'add_set_to_folder'}), name='add_set_to_folder'),
+    path('folders/<int:pk>/remove_set/<int:set_id>/', FolderViewSet.as_view({'delete': 'remove_set_from_folder'}), name='remove_set_from_folder'),
+    path('folders/<int:pk>/sets/', FolderViewSet.as_view({'get': 'list_sets_in_folder'}), name='list_sets_in_folder'),
     
 ]
 

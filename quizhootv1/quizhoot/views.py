@@ -509,83 +509,166 @@ class ClassroomViewSet(viewsets.ModelViewSet):
             
             
             
+    
 class FolderViewSet(viewsets.ModelViewSet):
     """
-    ViewSet to handle CRUD operations for Folders
+    ViewSet to handle CRUD operations for Folders,
+    plus adding/removing/listing sets within a folder.
     """
     serializer_class = FolderSerializer
     authentication_classes = [TokenAuthentication]
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         # Return only folders belonging to the authenticated user
-        return Folder.objects.filter(user=self.request.user)
+        return Folder.objects.filter(user_id=self.request.user.id)
 
+    # --------------------------------------------------------------------------
+    # CREATE a new folder
+    # POST /folders/create/
+    # Body: { "name": "Folder Name", "sets": [set_id1, set_id2, ...] (optional) }
+    # --------------------------------------------------------------------------
     @action(detail=False, methods=['post'], url_path='create')
-    def create_folder(self, request,user_id):
-        """
-        Create a new folder for the authenticated user.
-        Accepts: { "name": "My Folder" } + optional "sets": [set_id1, set_id2...]
-        """
-        #user_id = User.get_user_id(request.user.username)
+    def create_folder(self, request):
+        user_id = User.get_user_id(request.user.username)
         if not user_id:
             return Response({"error": "Invalid user"}, status=status.HTTP_400_BAD_REQUEST)
 
         data = request.data.copy()
-        data['user'] = user_id  # Assign the folder to the current user
+        data['user_id'] = user_id  # Assign the folder to the current user
 
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             folder = serializer.save()
             return Response(
-                self.get_serializer(folder).data, 
+                self.get_serializer(folder).data,
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    # --------------------------------------------------------------------------
+    # LIST all folders (for this user)
+    # GET /folders/list/
+    # --------------------------------------------------------------------------
     @action(detail=False, methods=['get'], url_path='list')
-    def list_folders(self, request,user_id=None):
-        """
-        List all folders for the authenticated user.
-        """
+    def list_folders(self, request):
         folders = self.get_queryset()
         serializer = self.get_serializer(folders, many=True)
+        print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    # --------------------------------------------------------------------------
+    # RENAME folder (custom partial update just for 'name')
+    # PUT /folders/<pk>/rename/
+    # Body: { "name": "New Folder Name" }
+    # --------------------------------------------------------------------------
     @action(detail=True, methods=['put'], url_path='rename')
     def rename_folder(self, request, pk=None):
-        """
-        Custom endpoint to rename a folder.
-        This is essentially a partial update, focusing on 'name' only.
-        """
         try:
-            folder = Folder.objects.get(pk=pk, user=request.user)
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
         except Folder.DoesNotExist:
             return Response(
-                {"error": "Folder not found or not yours"}, 
+                {"error": "Folder not found or not yours"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        new_name = request.data.get('name')
+        new_name = request.data.get('folder_name')
         if not new_name:
             return Response(
-                {"error": "Name is required"}, 
+                {"error": "Name is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        folder.name = new_name
+        folder.folder_name = new_name
         folder.save()
         return Response(self.get_serializer(folder).data, status=status.HTTP_200_OK)
 
-    # You can rely on the default ModelViewSet actions for retrieve, update, destroy
-    # or override them if you need custom logic.
-    
-    # Example override of 'destroy' if you want custom checks:
+    # --------------------------------------------------------------------------
+    # DELETE folder
+    # DELETE /folders/<pk>/
+    # --------------------------------------------------------------------------
     def destroy(self, request, *args, **kwargs):
         try:
-            folder = Folder.objects.get(pk=kwargs['pk'], user=request.user)
+            folder = Folder.objects.get(pk=kwargs['pk'], user_id=request.user.id)
         except Folder.DoesNotExist:
-            return Response({"error": "Folder not found or not yours"}, 
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
         folder.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # ==========================================================================
+    # NEW ACTIONS:
+    # ==========================================================================
+    # 5) ADD A SET to a folder
+    # POST /folders/<pk>/add_set/
+    # Body: { "set_id": <some_set_id> }
+    # ==========================================================================
+    @action(detail=True, methods=['post'], url_path='add_set')
+    def add_set_to_folder(self, request, pk=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        set_id = request.data.get('set_id')
+        if not set_id:
+            return Response({"error": "set_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            set_obj = Set.objects.get(id=set_id)
+        except Set.DoesNotExist:
+            return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Because we use a ManyToMany relation or a many-to-many field:
+        folder.sets.add(set_obj)
+        folder.save()
+
+        return Response({"message": f"Set {set_id} added to folder {pk}"}, status=status.HTTP_200_OK)
+
+    # ==========================================================================
+    # 6) REMOVE A SET from this folder
+    # DELETE /folders/<pk>/remove_set/<set_id>/
+    # ==========================================================================
+    @action(detail=True, methods=['delete'], url_path='remove_set/(?P<set_id>[^/.]+)')
+    def remove_set_from_folder(self, request, pk=None, set_id=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            set_obj = Set.objects.get(id=set_id)
+        except Set.DoesNotExist:
+            return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        folder.sets.remove(set_obj)
+        folder.save()
+
+        return Response({"message": f"Set {set_id} removed from folder {pk}"}, status=status.HTTP_200_OK)
+
+    # ==========================================================================
+    # 7) LIST ALL SETS within this folder
+    # GET /folders/<pk>/sets/
+    # ==========================================================================
+    @action(detail=True, methods=['get'], url_path='sets')
+    def list_sets_in_folder(self, request, pk=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Get all sets in this folder
+        sets = folder.sets.all()
+        serializer = SetSerializer(sets, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
