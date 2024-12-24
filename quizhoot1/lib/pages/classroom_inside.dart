@@ -4,6 +4,8 @@ import 'classroom_announcements.dart';
 import 'classroom_members.dart';
 import 'classroom_chat.dart';
 import 'classroom_folders.dart'; // Import the new Folder page
+import '../classes/Classroom.dart';
+
 
 class ClassroomInside extends StatefulWidget {
   const ClassroomInside({super.key});
@@ -15,14 +17,23 @@ class ClassroomInside extends StatefulWidget {
 class _ClassroomInsideState extends State<ClassroomInside>
     with SingleTickerProviderStateMixin {
   late TabController _tabController; // TabController to handle the tabs
+  late Classroom _classroom;
 
   @override
   void initState() {
     super.initState();
+
     _tabController = TabController(
         length: 4,
         vsync: this,
         initialIndex: 0); // Set initialIndex to 0 or a valid index
+
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _classroom = ModalRoute.of(context)?.settings.arguments as Classroom;
+
   }
 
   @override
@@ -49,15 +60,25 @@ class _ClassroomInsideState extends State<ClassroomInside>
       ),
       body: TabBarView(
         controller: _tabController, // Set the controller to the TabBarView
-        children: const [
+        children: [
           ClassroomAnnouncements(), // Widget for Notice Board
-          ClassroomMembers(), // Widget for Members
+          GestureDetector(
+            onTap: () {
+              // Navigate to ClassroomMembers and pass the classroom object
+              Navigator.pushNamed(
+                context,
+                '/classroomMembers',
+                arguments: _classroom,
+              );
+            },
+            child: ClassroomMembers(), // Pass the classroom to ClassroomMembers
+          ),
           ClassroomChat(), // Widget for Chat
           ClassroomFolders(), // Widget for Folders
         ],
       ),
-      bottomNavigationBar: const CustomBottomNav(
-          initialIndex: 0), // Set the initialIndex correctly within the range
+      bottomNavigationBar: const CustomBottomNav(initialIndex: 0),
+
     );
   }
 }

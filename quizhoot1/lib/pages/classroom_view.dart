@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:quizhoot/classes/Classroom.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
-import 'classroom_inside.dart'; // This file is added to navigate to the class details page
-import "clasroom_creation.dart";
+import 'classroom_inside.dart';
+import 'classroom_creation.dart';
+import 'package:quizhoot/classes/User.dart'; // Import your service that contains fetchUsersClassrooms method
 
-// Main page for the classroom view
 class ClassroomViewPage extends StatelessWidget {
   const ClassroomViewPage({super.key});
 
@@ -15,12 +18,10 @@ class ClassroomViewPage extends StatelessWidget {
       initialIndex: 2, // Set the initial tab to index 2 (last tab)
       child: Scaffold(
         appBar: CustomTopNav(initialIndex: 2), // Custom top navigation bar
-        body:
-            ClassroomContent(), // Main content of the page, which displays the classrooms
-        backgroundColor:
-            Color(0xFF3A1078), // Background color for the entire page
-        bottomNavigationBar:
-            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+
+        body: ClassroomContent(), // Main content of the page, which displays the classrooms
+        backgroundColor: Color(0xFF3A1078), // Background color for the entire page
+        bottomNavigationBar: CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
       ),
     );
   }
@@ -35,29 +36,46 @@ class ClassroomContent extends StatefulWidget {
 }
 
 class _ClassroomContentState extends State<ClassroomContent> {
-  // List of classrooms
-  final List<Map<String, String>> classrooms = [
-    {
-      'className': 'Class 1',
-      'studentCount': '10 Students',
-      'teacherName': 'Teacher A'
-    },
-    {
-      'className': 'Class 2',
-      'studentCount': '15 Students',
-      'teacherName': 'Teacher B'
-    },
-    {
-      'className': 'Class 3',
-      'studentCount': '20 Students',
-      'teacherName': 'Teacher C'
-    },
-  ];
+  List<Classroom> classrooms = [];
+  bool isLoading = true;
+  bool hasError = false;
+  late User user;
 
-  // Method to delete a classroom
+  @override
+  void initState() {
+    super.initState();
+    user = Provider.of<User>(context, listen: false);
+    fetchClassrooms();
+  }
+
+  void fetchClassrooms() async {
+    try {
+      await user.fetchClassrooms();
+      setState(() {
+        classrooms = user.getClassrooms();
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        hasError = true;
+        isLoading = false;
+      });
+    }
+  }
+// Method to edit a classroom's name
+  void _editClassroom(int index, String newName) {
+    setState(() {
+      classrooms[index].classroomName = newName; // Update the classroom name
+    });
+  }
+
   void _deleteClassroom(int index) {
     setState(() {
+      classrooms.elementAt(index).remove();
       classrooms.removeAt(index); // Remove the classroom at the specified index
+      setState(() {
+        user.getClassrooms();
+      });
     });
   }
 
@@ -70,30 +88,47 @@ class _ClassroomContentState extends State<ClassroomContent> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (hasError) {
+      return const Center(
+        child: Text('Failed to load classrooms', style: TextStyle(color: Colors.white)),
+      );
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          for (int i = 0; i < classrooms.length; i++)
-            Padding(
+          ...classrooms.asMap().entries.map((entry) {
+            int i = entry.key;
+            var classroom = entry.value;
+
+            return Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
               child: ClassroomCard(
-                className: classrooms[i]['className']!,
-                studentCount: classrooms[i]['studentCount']!,
-                teacherName: classrooms[i]['teacherName']!,
+                className: classroom.classroomName,
+                studentCount: classroom.size.toString(),
+                teacherName: classroom.creatorName,
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ClassroomInside(),
-                    ),
+                  Navigator.pushNamed(
+                      context,
+                      '/classroomInside',
+                      arguments: classroom
                   );
                 },
                 onDelete: () => _deleteClassroom(i), // Pass delete callback
                 onEdit: (newName) =>
-                    _editClassroom(i, newName), // Pass edit callback
+
+                    _editClassroom(i, newName),
+
               ),
-            ),
+            );
+          }).toList(),
           if (classrooms.isEmpty)
             const Text(
               'No classrooms available.',
@@ -112,7 +147,8 @@ class ClassroomCard extends StatelessWidget {
   final String teacherName;
   final VoidCallback onTap;
   final VoidCallback onDelete; // New callback for deleting a classroom
-  final Function(String) onEdit; // Callback for editing
+  final Function(String) onEdit;
+
 
   const ClassroomCard({
     super.key,
@@ -133,8 +169,8 @@ class ClassroomCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white, // Background color of the card
-          borderRadius:
-              BorderRadius.circular(12), // Rounded corners for the card
+
+          borderRadius: BorderRadius.circular(12), // Rounded corners for the card
           boxShadow: const [
             BoxShadow(
               color: Colors.black26, // Shadow color
@@ -154,8 +190,7 @@ class ClassroomCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     className, // Display the class name here
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 // Edit button - show edit dialog
@@ -176,8 +211,7 @@ class ClassroomCard extends StatelessWidget {
             // Row for displaying the number of students with an icon
             Row(
               children: [
-                const Icon(Icons.person,
-                    size: 20), // Icon for the number of students
+                const Icon(Icons.person, size: 20), // Icon for the number of students
                 const SizedBox(width: 5),
                 Text(studentCount), // Display the number of students
               ],
@@ -197,11 +231,11 @@ class ClassroomCard extends StatelessWidget {
     );
   }
 
-  // Show edit dialog to edit the classroom name
   void _showEditDialog(
       BuildContext context, String currentClassName, Function(String) onEdit) {
     TextEditingController controller =
-        TextEditingController(text: currentClassName);
+    TextEditingController(text: currentClassName);
+
 
     showDialog(
       context: context,
@@ -211,7 +245,7 @@ class ClassroomCard extends StatelessWidget {
           content: TextField(
             controller: controller,
             decoration:
-                const InputDecoration(hintText: 'Enter new classroom name'),
+            const InputDecoration(hintText: 'Enter new classroom name'),
           ),
           actions: [
             TextButton(

@@ -36,7 +36,18 @@ abstract class BaseService {
 
     // Quiz routes
     'add-quiz': 'quiz/add/<int:set_id>/',
-    'list-quiz': 'quiz/list/<int:set_id>/'
+    'list-quiz': 'quiz/list/<int:set_id>/',
+
+    // Classroom routes
+    'classroom-list': 'classrooms/list/',  // To list all classrooms created by the user
+    'classroom-add': 'classrooms/add/',    // To create a new classroom
+    'classroom-delete': 'classrooms/delete/<int:pk>/',  // To delete a classroom by its ID
+    'classroom-update': 'classrooms/update/<int:pk>/',  // To update a classroom by its ID
+
+    'classroom-user-list': 'classrooms_user/list/',
+    'classroom-members-list': 'classrooms_user/members_list/<int:classroom_id>/',
+    'classroom-user-add-user': 'classrooms_user/add_user_2_classroom/',
+
   });
 
 

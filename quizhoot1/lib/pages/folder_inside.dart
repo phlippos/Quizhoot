@@ -18,7 +18,7 @@ class FolderInside extends StatelessWidget {
         body: SetContent(), // Body content with a list of sets
         backgroundColor: Color(0xFF3A1078), // Background color for the scaffold
         bottomNavigationBar:
-            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+        CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
       ),
     );
   }
@@ -122,12 +122,13 @@ class SetCard extends StatelessWidget {
                 IconButton(
                     icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
                     onPressed: () => {}
-                    //     // should be similar to flashcard_update.dart
-                    ),
+
+                  //     // should be similar to flashcard_update.dart
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
                   onPressed:
-                      onDelete, // Executes the onDelete function when pressed
+                  onDelete, // Executes the onDelete function when pressed
                 ),
               ],
             ),
@@ -161,4 +162,5 @@ class Set {
   final String creator;
 
   Set({required this.name, required this.size, required this.creator});
+
 }

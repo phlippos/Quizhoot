@@ -40,64 +40,64 @@ class _CardsPageState extends State<CardsPage> {
       body: Center(
         child: unknownWords.isNotEmpty
             ? Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Display Known and Unknown Counts
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      'Known: $correctCount Unknown: ${unknownWords.length}',
-                      style: const TextStyle(fontSize: 20, color: Colors.white),
-                    ),
-                  ),
-                  GestureDetector(
-                    onPanUpdate: (details) {
-                      setState(() {
-                        _dragOffset += details.delta;
-                      });
-                    },
-                    onPanEnd: (details) {
-                      if (_dragOffset.dx > 200) {
-                        _swipeRight(); // Swipe right to the next card
-                      } else if (_dragOffset.dx < -200) {
-                        _swipeLeft(); // Swipe left to the next card
-                      } else {
-                        setState(() {
-                          _dragOffset = Offset.zero; // Reset position
-                          _opacity = 1.0; // Reset opacity
-                        });
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      transform: Matrix4.translationValues(
-                        _dragOffset.dx,
-                        0, // Vertical movement is fixed
-                        0,
-                      ),
-                      child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 200),
-                        opacity: _opacity,
-                        child: FlipCard(
-                          key: ValueKey(currentIndex), // Reset flip state
-                          front: _buildCardFace(
-                            unknownWords[currentIndex]['term']!,
-                            _getCardColor(),
-                          ),
-                          back: _buildCardFace(
-                            unknownWords[currentIndex]['definition']!,
-                            _getCardColor(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : const Text(
-                'All cards finished!',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Display Known and Unknown Counts
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Known: $correctCount Unknown: ${unknownWords.length}',
+                style: const TextStyle(fontSize: 20, color: Colors.white),
               ),
+            ),
+            GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _dragOffset += details.delta;
+                });
+              },
+              onPanEnd: (details) {
+                if (_dragOffset.dx > 200) {
+                  _swipeRight(); // Swipe right to the next card
+                } else if (_dragOffset.dx < -200) {
+                  _swipeLeft(); // Swipe left to the next card
+                } else {
+                  setState(() {
+                    _dragOffset = Offset.zero; // Reset position
+                    _opacity = 1.0; // Reset opacity
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: Matrix4.translationValues(
+                  _dragOffset.dx,
+                  0, // Vertical movement is fixed
+                  0,
+                ),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: _opacity,
+                  child: FlipCard(
+                    key: ValueKey(currentIndex), // Reset flip state
+                    front: _buildCardFace(
+                      unknownWords[currentIndex]['term']!,
+                      _getCardColor(),
+                    ),
+                    back: _buildCardFace(
+                      unknownWords[currentIndex]['definition']!,
+                      _getCardColor(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        )
+            : const Text(
+          'All cards finished!',
+          style: TextStyle(color: Colors.white, fontSize: 24),
+        ),
       ),
       backgroundColor: const Color(0xff3A1078),
     );
@@ -178,3 +178,4 @@ class _CardsPageState extends State<CardsPage> {
     );
   }
 }
+

@@ -114,7 +114,9 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content:
-              Text('Please provide a valid name and select at least one set.'),
+
+          Text('Please provide a valid name and select at least one set.'),
+
           duration: Duration(seconds: 2),
         ),
       );
@@ -164,7 +166,7 @@ class _CreateFolderPageState extends State<CreateFolderPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: _showFolderDialog, // Opens dialog to create folder
         backgroundColor:
-            const Color.fromARGB(255, 237, 234, 240), // Button background color
+        const Color.fromARGB(255, 237, 234, 240), // Button background color
         child: const Icon(Icons.add), // Icon for the floating button
       ),
     );

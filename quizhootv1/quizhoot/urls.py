@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet
+from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -37,7 +37,25 @@ urlpatterns = [
     
     #Quiz
     path('quiz/add/<int:set_id>/',QuizViewSet.as_view({'post': 'add_quiz'}),name='add_quiz'),
-    path('quiz/list/<int:set_id>/',QuizViewSet.as_view({'get': 'list_quiz'}),name='list_quiz')
+    path('quiz/list/<int:set_id>/',QuizViewSet.as_view({'get': 'list_quiz'}),name='list_quiz'),
+    
+    
+    # Classroom routes
+    path('classrooms_user/list/', ClassroomUserViewSet.as_view({'get': 'list_users_classrooms'}), name='list_users_classrooms'),
+    path('classrooms_user/members_list/<int:classroom_id>/',ClassroomUserViewSet.as_view({'get':'list_members_of_classrooms'}),name='list_members_of_classrooms'),
+    path('classrooms_user/add_user_2_classroom/',ClassroomUserViewSet.as_view({'post':'add_user_2_classroom'}), name='add_user_2_classroom'),
+    
+    path('classrooms/list/',ClassroomViewSet.as_view({'get': 'list_classrooms'}),name='list_classrooms'),
+    path('classrooms/add/', ClassroomViewSet.as_view({'post': 'add_classroom'}), name='add_classroom'),
+    path('classrooms/delete/<int:pk>/', ClassroomViewSet.as_view({'delete': 'delete_classroom'}), name='delete_classroom'),
+    path('classrooms/update/<int:pk>/', ClassroomViewSet.as_view({'put': 'update_classroom'}), name='update_classroom'),
+    
+    
+        # Folder routes
+    path('folders/create/<int:user_id>/', FolderViewSet.as_view({'post': 'create_folder'}), name='create_folder'),
+    path('folders/list/<int:user_id>/', FolderViewSet.as_view({'get': 'list_folders'}), name='list_folders'),
+    path('folders/<int:pk>/rename/', FolderViewSet.as_view({'put': 'rename_folder'}), name='rename_folder'),
+    path('folders/<int:pk>/', FolderViewSet.as_view({'get': 'retrieve', 'delete': 'destroy', 'put': 'update'}), name='folder_detail')
     
 ]
 
