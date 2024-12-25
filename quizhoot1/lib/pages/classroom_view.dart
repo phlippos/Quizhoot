@@ -54,7 +54,7 @@ class _ClassroomContentState extends State<ClassroomContent> {
     try {
       await user.fetchClassrooms();
       setState(() {
-        classrooms = user.getClassrooms();
+        classrooms = user.classrooms;
         isLoading = false;
       });
     } catch (e) {
@@ -64,7 +64,8 @@ class _ClassroomContentState extends State<ClassroomContent> {
       });
     }
   }
-// Method to edit a classroom's name
+
+  // Method to edit a classroom's name
   void _editClassroom(int index, String newName) {
     setState(() {
       classrooms[index].classroomName = newName; // Update the classroom name
@@ -76,22 +77,8 @@ class _ClassroomContentState extends State<ClassroomContent> {
       classrooms.elementAt(index).remove();
       classrooms.removeAt(index); // Remove the classroom at the specified index
       setState(() {
-        user.getClassrooms();
+        user.classrooms;
       });
-    });
-  }
-
-  // Method to edit a classroom's name
-  void _editClassroom(int index, String newName) {
-    setState(() {
-      classrooms[index]['className'] = newName; // Update the classroom name
-    });
-  }
-
-  // Method to edit a classroom's name
-  void _editClassroom(int index, String newName) {
-    setState(() {
-      classrooms[index]['className'] = newName; // Update the classroom name
     });
   }
 
@@ -120,6 +107,7 @@ class _ClassroomContentState extends State<ClassroomContent> {
             return Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
               child: ClassroomCard(
+                user: user, // Pass the current user to the ClassroomCard
                 className: classroom.classroomName,
                 studentCount: classroom.size.toString(),
                 teacherName: classroom.creatorName,
@@ -131,8 +119,7 @@ class _ClassroomContentState extends State<ClassroomContent> {
                   );
                 },
                 onDelete: () => _deleteClassroom(i), // Pass delete callback
-                onEdit: (newName) =>
-                    _editClassroom(i, newName), // Pass edit callback
+                onEdit: (newName) => _editClassroom(i, newName),
               ),
             );
           }).toList(),
@@ -149,15 +136,18 @@ class _ClassroomContentState extends State<ClassroomContent> {
 
 // A widget representing a classroom card with class details
 class ClassroomCard extends StatelessWidget {
+  final User user; // Add user property
   final String className;
   final String studentCount;
   final String teacherName;
   final VoidCallback onTap;
   final VoidCallback onDelete; // New callback for deleting a classroom
-  final Function(String) onEdit; // Callback for editing
+  final Function(String) onEdit;
+
 
   const ClassroomCard({
     super.key,
+    required this.user, // Initialize user
     required this.className,
     required this.studentCount,
     required this.teacherName,
@@ -175,8 +165,7 @@ class ClassroomCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white, // Background color of the card
-          borderRadius:
-              BorderRadius.circular(12), // Rounded corners for the card
+          borderRadius: BorderRadius.circular(12), // Rounded corners for the card
           boxShadow: const [
             BoxShadow(
               color: Colors.black26, // Shadow color
@@ -206,11 +195,12 @@ class ClassroomCard extends StatelessWidget {
                     _showEditDialog(context, className, onEdit);
                   },
                 ),
-                // Delete button
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
-                  onPressed: onDelete, // Call delete function
-                ),
+                // Delete button - show only if the user is the creator
+                if (user.username == teacherName) // Check if the user is the creator
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
+                    onPressed: onDelete, // Call delete function
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -241,8 +231,7 @@ class ClassroomCard extends StatelessWidget {
   // Show edit dialog to edit the classroom name
   void _showEditDialog(
       BuildContext context, String currentClassName, Function(String) onEdit) {
-    TextEditingController controller =
-        TextEditingController(text: currentClassName);
+    TextEditingController controller = TextEditingController(text: currentClassName);
 
     showDialog(
       context: context,

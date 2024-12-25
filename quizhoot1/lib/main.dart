@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quizhoot/pages/flashcard_update.dart';
+import 'package:quizhoot/pages/folder_inside.dart';
 import 'package:quizhoot/pages/onboarding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/pages.dart';
@@ -46,6 +47,8 @@ class QuizHoot extends StatelessWidget {
         '/classroomView': (context) => const ClassroomViewPage(),
         '/classroomInside': (context) => const ClassroomInside(),
         '/classroomMembers': (context) => const ClassroomMembers(),
+        '/classroomFolders':(context) => ClassroomFolders(),
+        '/folderInside':(context) => FolderInside(),
       },
     );
   }

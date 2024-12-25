@@ -1,46 +1,9 @@
 import 'package:flutter/material.dart';
-
-class Folder {
-  final String id;
-  final String name;
-  final String description;
-  final int setCount;
-  final DateTime createdAt;
-  final String createdBy;
-
-  Folder({
-    required this.id,
-    required this.name,
-    required this.description,
-    this.setCount = 0,
-    required this.createdAt,
-    required this.createdBy,
-  });
-
-  // Factory constructor to create a Folder from JSON
-  factory Folder.fromJson(Map<String, dynamic> json) {
-    return Folder(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      description: json['description'] as String,
-      setCount: json['setCount'] as int? ?? 0,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      createdBy: json['createdBy'] as String,
-    );
-  }
-
-  // Convert folder to JSON
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'description': description,
-      'setCount': setCount,
-      'createdAt': createdAt.toIso8601String(),
-      'createdBy': createdBy,
-    };
-  }
-}
+import 'package:provider/provider.dart';
+import 'package:quizhoot/classes/Classroom.dart';
+import '../classes/Folder.dart';
+import '../classes/IComponent.dart';
+import '../classes/Set.dart';
 
 class ClassroomFolders extends StatefulWidget {
   const ClassroomFolders({super.key});
@@ -52,75 +15,48 @@ class ClassroomFolders extends StatefulWidget {
 class _ClassroomFoldersState extends State<ClassroomFolders> {
   bool _isLoading = true;
   String? _error;
-  List<Folder> _folders = [];
-  late final String _classroomId;
+  late List<IComponent> _components;
+  late Classroom _classroom;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-    _classroomId = args?['classroomId'] as String? ?? '';
-    _loadFolders();
+    _loadComponents();
   }
 
-  Future<void> _loadFolders() async {
+  Future<void> _loadComponents() async {
     try {
       setState(() {
         _isLoading = true;
         _error = null;
       });
 
-      // TODO: Replace with actual API call
-      // Example API call:
-      // final response = await _folderService.getFoldersForClassroom(_classroomId);
-      // _folders = response.map((json) => Folder.fromJson(json)).toList();
+      _classroom = ModalRoute.of(context)?.settings.arguments as Classroom;
 
-      // Temporary mock data
-      await Future.delayed(const Duration(seconds: 1));
-      _folders = [
-        Folder(
-          id: '1',
-          name: 'Homework',
-          description: 'Daily homework assignments',
-          setCount: 5,
-          createdAt: DateTime.now(),
-          createdBy: 'user123',
-        ),
-      ];
-
+      // Load components (sets and folders)
+      await _classroom.listSetsAndFolders();
+      _components = _classroom.components;
+      
       setState(() {
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load folders: $e';
+        _error = 'Failed to load components: $e';
       });
     }
   }
 
-  Future<void> _createFolder(String name, String description) async {
+  Future<void> _createFolder(String name) async {
     try {
-      // TODO: Replace with actual API call
-      // Example API call:
-      // final newFolder = await _folderService.createFolder(
-      //   classroomId: _classroomId,
-      //   name: name,
-      //   description: description,
-      // );
-
-      // Temporary mock implementation
-      final newFolder = Folder(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name,
-        description: description,
-        createdAt: DateTime.now(),
-        createdBy: 'currentUser', // TODO: Replace with actual user ID
-      );
+      final newFolder = Folder.create(name);
+      await newFolder.add();
+      await _classroom.addFolder(newFolder.id!);
+      _classroom.addComponent(newFolder);
 
       setState(() {
-        _folders.add(newFolder);
+        _components;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,13 +69,11 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
     }
   }
 
-  Future<void> _deleteFolder(String folderId) async {
+  Future<void> _deleteFolder(Folder folder) async {
     try {
-      // TODO: Replace with actual API call
-      // await _folderService.deleteFolder(folderId);
-
+      folder.remove();
       setState(() {
-        _folders.removeWhere((folder) => folder.id == folderId);
+        _components.remove(folder);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -160,7 +94,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Dismissible(
-        key: Key(folder.id),
+        key: Key(folder.id.toString()),
         direction: DismissDirection.endToStart,
         confirmDismiss: (direction) => showDialog(
           context: context,
@@ -174,13 +108,12 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child:
-                    const Text('Delete', style: TextStyle(color: Colors.red)),
+                child: const Text('Delete', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
         ),
-        onDismissed: (direction) => _deleteFolder(folder.id),
+        onDismissed: (direction) => _deleteFolder(folder),
         background: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20),
@@ -191,11 +124,8 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
           onTap: () {
             Navigator.pushNamed(
               context,
-              '/folderContent',
-              arguments: {
-                'folderId': folder.id,
-                'folderName': folder.name,
-              },
+              '/folderInside',
+              arguments: folder,
             );
           },
           child: Padding(
@@ -229,15 +159,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        folder.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${folder.setCount} sets',
+                        '${folder.size} sets',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[500],
@@ -272,45 +194,49 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.white),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadFolders,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadFolders,
-                  child: _folders.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No folders yet',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          itemCount: _folders.length,
-                          itemBuilder: (context, index) =>
-                              _buildFolderCard(_folders[index]),
-                        ),
-                ),
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _error!,
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadComponents,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadComponents,
+        child: _components.isEmpty
+            ? const Center(
+          child: Text(
+            'No components yet',
+            style: TextStyle(color: Colors.white),
+          ),
+        )
+            : ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          itemCount: _components.length,
+          itemBuilder: (context, index) {
+            final component = _components[index];
+            if (component is Folder) {
+              return _buildFolderCard(component);
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
     );
   }
 
   Future<void> _showAddFolderDialog() async {
     final TextEditingController nameController = TextEditingController();
-    final TextEditingController descriptionController = TextEditingController();
 
     return showDialog(
       context: context,
@@ -326,14 +252,6 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
                 hintText: 'Enter folder name',
               ),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'Enter folder description',
-              ),
-            ),
           ],
         ),
         actions: [
@@ -346,7 +264,6 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
               if (nameController.text.isNotEmpty) {
                 _createFolder(
                   nameController.text,
-                  descriptionController.text,
                 );
                 Navigator.pop(context);
               }

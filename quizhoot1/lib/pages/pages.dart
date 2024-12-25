@@ -13,3 +13,5 @@ export 'classroom_creation.dart';
 export 'classroom_view.dart';
 export 'classroom_inside.dart';
 export 'classroom_members.dart';
+export 'classroom_folders.dart';
+export 'folder_view.dart';

@@ -77,7 +77,17 @@ class _ClassroomInsideState extends State<ClassroomInside>
             child: ClassroomMembers(), // Pass the classroom to ClassroomMembers
           ),
           ClassroomChat(), // Widget for Chat
-          ClassroomFolders(), // Widget for Folders
+          GestureDetector(
+            onTap: () {
+              // Navigate to ClassroomMembers and pass the classroom object
+              Navigator.pushNamed(
+                context,
+                '/classroomFolders',
+                arguments: _classroom,
+              );
+            },
+            child: ClassroomFolders(), // Pass the classroom to ClassroomMembers
+          ), // Widget for Folders
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(initialIndex: 0),

@@ -219,8 +219,8 @@ class Set_FlashcardViewSet(viewsets.ModelViewSet):
             FROM Flashcard f 
             INNER JOIN quizhoot_Set_Flashcard s 
             ON f.id = s.flashcard_id 
-            WHERE s.set_id = %s AND s.user_id = %s
-            """, [req_set_id,user_id])
+            WHERE s.set_id = %s 
+            """, [req_set_id])
         print(len(flashcards))
         serializer = FlashcardSerializer(flashcards, many = True)
 
@@ -318,7 +318,7 @@ class ClassroomUserViewSet(viewsets.ModelViewSet):
     serializer_class = Classroom_User_Serializer
     queryset = classroom_user.objects.all()
     @staticmethod
-    def add_admin_2_classroom(self,classroom_id, user_id, user_role):
+    def add_admin_2_classroom(classroom_id, user_id, user_role):
         data = {
             'classroom_id': classroom_id,
             'user_id': user_id,
@@ -401,17 +401,19 @@ class ClassroomUserViewSet(viewsets.ModelViewSet):
             return False, "Classroom user not found!!!!"
         except Exception as e:
             return False, str(e)
+"""
 
-    @staticmethod
-    def delete_user_from_classroom(self,classroom_id, user_id):
-        try:
-            classroom_user = classroom_user.objects.get(classroom_id=classroom_id, user_id=user_id)
-            classroom_user.delete()
-            return True, "User removed from classroom successfully bye"
-        except classroom_user.DoesNotExist:
-            return False, "Classroom user not found!!!!!"
+    def delete_user_from_classroom(self,request,classroom_id = None):
+        try:        
+            user_id = User.get_user_id(request.user.username)
+            print(classroom_id)
+            print(user_id)
+            classroom_user_obj = classroom_user.objects.get(classroom_id=classroom_id, user_id=user_id)
+            classroom_user_obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
-            return False, str(e)"""
+            print(e)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
         
         
         
@@ -451,9 +453,9 @@ class ClassroomViewSet(viewsets.ModelViewSet):
             size = classroom_user.objects.filter(classroom_id=classroom.id).count()
             
             # Get the creator's name (assuming `creator_id` points to a User model)
-            creator_name = classroom_user.objects.filter(classroom_id=classroom.id, user_role=True).first()
-            creator_name = creator_name.user_id.username if creator_name else None
-
+            creator_name = Classroom.objects.get(id=classroom.id)
+            creator_name = creator_name.creator_id.username if creator_name else None
+            
             # Add the classroom data, including size and creator_name
             classroom_data.append({
                 "id": classroom.id,
@@ -486,6 +488,79 @@ class ClassroomViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=True, methods=['post'], url_path='add-set')
+    def add_set_to_classroom(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+        set_id = request.data.get('set_id')
+        try:
+            set_instance = Set.objects.get(pk=set_id)
+            classroom.sets.add(set_instance)
+            return Response({"message": "Set added to classroom successfully."}, status=status.HTTP_200_OK)
+        except Set.DoesNotExist:
+            return Response({"error": "Set not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['delete'], url_path='remove-set')
+    def remove_set_from_classroom(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+        set_id = request.data.get('set_id')
+        try:
+            set_instance = Set.objects.get(pk=set_id)
+            classroom.sets.remove(set_instance)
+            return Response({"message": "Set removed from classroom successfully."}, status=status.HTTP_200_OK)
+        except Set.DoesNotExist:
+            return Response({"error": "Set not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['post'], url_path='add-folder')
+    def add_folder_to_classroom(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+        folder_id = request.data.get('folder_id')
+        try:
+            folder_instance = Folder.objects.get(pk=folder_id)
+            classroom.folders.add(folder_instance)
+            return Response({"message": "Folder added to classroom successfully."}, status=status.HTTP_200_OK)
+        except Folder.DoesNotExist:
+            return Response({"error": "Folder not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['delete'], url_path='remove-folder')
+    def remove_folder_from_classroom(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+        folder_id = request.data.get('folder_id')
+        try:
+            folder_instance = Folder.objects.get(pk=folder_id)
+            classroom.folders.remove(folder_instance)
+            return Response({"message": "Folder removed from classroom successfully."}, status=status.HTTP_200_OK)
+        except Folder.DoesNotExist:
+            return Response({"error": "Folder not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['get'], url_path='list-sets-folders')
+    def list_sets_and_folders(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+        sets = classroom.sets.all()
+        folders = classroom.folders.all()
+
+        sets_data = [{"id": s.id, "set_name": s.set_name, "size":s.size} for s in sets]
+        folders_data = [{"id": f.id, "folder_name": f.folder_name,"size":f.sets.count()} for f in folders]
+
+        return Response({
+            "sets": sets_data,
+            "folders": folders_data
+        }, status=status.HTTP_200_OK)
+        
     """@action(detail=True, methods=['put'], url_path='update')
     def update_user_role(self,request):
         classroom_id = request.data.get("classroom_id")
@@ -661,7 +736,7 @@ class FolderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='sets')
     def list_sets_in_folder(self, request, pk=None):
         try:
-            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+            folder = Folder.objects.get(pk=pk)
         except Folder.DoesNotExist:
             return Response(
                 {"error": "Folder not found or not yours"},
