@@ -4,6 +4,7 @@ import 'package:quizhoot/services/classroom_service.dart';
 import 'package:quizhoot/services/user_service.dart';
 import '../services/auth_services.dart';
 import 'package:http/http.dart' as http;
+import 'Folder.dart';
 import 'IComponent.dart';
 import 'Set.dart';
 import 'package:quizhoot/classes/Classroom.dart'; // Ensure consistent case
@@ -21,6 +22,8 @@ class User with ChangeNotifier {
   final UserService _userService = UserService.instance;
   List<IComponent> _components = [];
   List<Classroom> _classrooms = [];
+
+  List<Classroom> get classrooms => _classrooms;
 
   User();
 
@@ -94,6 +97,10 @@ class User with ChangeNotifier {
     return _components.whereType<Set>().toList();
   }
 
+  List<Folder> getFolders(){
+    return _components.whereType<Folder>().toList();
+  }
+
   void addClassroom(Classroom classroom) {
     if (!_classrooms.contains(classroom)) {
       _classrooms.add(classroom);
@@ -101,9 +108,6 @@ class User with ChangeNotifier {
     }
   }
 
-  List<Classroom> getClassrooms() {
-    return _classrooms;
-  }
 
   Future<http.Response> register(String firstName, String lastName, String username, String email, String password, String phoneNumber) async {
     final response = await _authService.register(firstName, lastName, username, email, phoneNumber, password);
@@ -175,5 +179,11 @@ class User with ChangeNotifier {
       addComponent(Set(set["id"],set["set_name"], set["size"]));
     });
   }
-
+  Future<void> fetchFolders() async{
+    List<Folder> fetchedFolders = await Folder.fetchFolders();
+    fetchedFolders.forEach((folder){
+        addComponent(folder);
+      }
+    );
+  }
 }

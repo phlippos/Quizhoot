@@ -51,7 +51,7 @@ class _ClassroomContentState extends State<ClassroomContent> {
     try {
       await user.fetchClassrooms();
       setState(() {
-        classrooms = user.getClassrooms();
+        classrooms = user.classrooms;
         isLoading = false;
       });
     } catch (e) {
@@ -73,7 +73,7 @@ class _ClassroomContentState extends State<ClassroomContent> {
       classrooms.elementAt(index).remove();
       classrooms.removeAt(index); // Remove the classroom at the specified index
       setState(() {
-        user.getClassrooms();
+        user.classrooms;
       });
     });
   }

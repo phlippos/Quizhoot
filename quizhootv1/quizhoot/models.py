@@ -68,13 +68,14 @@ class Quiz_User_Set(models.Model):
 class Classroom(models.Model):
     classroom_name = models.CharField(max_length=255, db_column="classroom_name", null=False)
     creator_id = models.ForeignKey(User,on_delete = models.CASCADE,db_column = "creator_id")
-    
+    sets = models.ManyToManyField('Set', blank=True, related_name='classrooms')
+    folders = models.ManyToManyField('Folder', blank=True, related_name='classrooms')
     
 class classroom_user(models.Model):
     classroom_id = models.ForeignKey(Classroom,on_delete = models.CASCADE,db_column = "classroom_id")
     user_id = models.ForeignKey(User,on_delete = models.CASCADE,db_column = "user_id")
     user_role = models.BooleanField(null=False,db_column="user_role",default = False )
-    
+
 
 class Folder(models.Model):
     """

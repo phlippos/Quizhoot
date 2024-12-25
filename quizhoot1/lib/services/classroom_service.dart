@@ -102,4 +102,79 @@ class ClassroomService extends BaseService {
     return response;
   }
 
+  Future<http.Response> leaveClassroom(int classroomID) async {
+    final response = await http.delete(
+      Uri.parse(getLink('classroom-remove-user', {'<int:classroom_id>': '$classroomID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${await AuthService.instance.getToken()}',
+      },
+    );
+    return response;
+  }
+
+  // Add a set to a classroom
+  Future<http.Response> addSetToClassroom(int classroomID, int setID) async {
+    final response = await http.post(
+      Uri.parse(getLink('classroom-add-set', {'<int:pk>': '$classroomID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${await AuthService.instance.getToken()}',
+      },
+      body: jsonEncode({'set_id': setID}),
+    );
+    return response;
+  }
+
+  // Remove a set from a classroom
+  Future<http.Response> removeSetFromClassroom(int classroomID, int setID) async {
+    final response = await http.delete(
+      Uri.parse(getLink('classroom-remove-set', {'<int:pk>': '$classroomID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${await AuthService.instance.getToken()}',
+      },
+      body: jsonEncode({'set_id': setID}),
+    );
+    return response;
+  }
+
+  // Add a folder to a classroom
+  Future<http.Response> addFolderToClassroom(int classroomID, int folderID) async {
+    final response = await http.post(
+      Uri.parse(getLink('classroom-add-folder', {'<int:pk>': '$classroomID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${await AuthService.instance.getToken()}',
+      },
+      body: jsonEncode({'folder_id': folderID}),
+    );
+    return response;
+  }
+
+  // Remove a folder from a classroom
+  Future<http.Response> removeFolderFromClassroom(int classroomID, int folderID) async {
+    final response = await http.delete(
+      Uri.parse(getLink('classroom-remove-folder', {'<int:pk>': '$classroomID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${await AuthService.instance.getToken()}',
+      },
+      body: jsonEncode({'folder_id': folderID}),
+    );
+    return response;
+  }
+
+  // List all sets and folders in a classroom
+  Future<http.Response> listSetsAndFoldersInClassroom(int classroomID) async {
+    final response = await http.get(
+      Uri.parse(getLink('classroom-list-sets-folders', {'<int:pk>': '$classroomID'})!),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token ${await AuthService.instance.getToken()}',
+      },
+    );
+    return response;
+  }
+
 }

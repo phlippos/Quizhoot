@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../classes/User.dart';
 import 'custom_top_nav.dart';
 import 'custom_bottom_nav.dart';
 import 'folder_inside.dart';
@@ -16,9 +18,10 @@ class _FolderViewPageState extends State<FolderViewPage> {
   bool _isLoading = true;
   bool _hasError = false;
   List<Folder> _folders = [];
-
+  late User _user;
   @override
   void initState() {
+    _user = Provider.of<User>(context,listen:false);
     super.initState();
     _fetchFolders();
   }
@@ -31,9 +34,9 @@ class _FolderViewPageState extends State<FolderViewPage> {
     });
     try {
       // If your Folder class has a static method like fetchFolders()
-      final fetchedFolders = await Folder.fetchFolders();
+      await _user.fetchFolders();
       setState(() {
-        _folders = fetchedFolders;
+        _folders = _user.getFolders();
         _isLoading = false;
       });
     } catch (e) {
@@ -52,6 +55,7 @@ class _FolderViewPageState extends State<FolderViewPage> {
       await folder.remove();
       setState(() {
         _folders.remove(folder);
+        _user.components.remove(folder);
       });
     } catch (e) {
       print("Error deleting folder: $e");
@@ -185,11 +189,10 @@ class FolderListView extends StatelessWidget {
               folder: folder,
               onTap: () {
                 // Navigate to folder details
-                Navigator.push(
+                Navigator.pushNamed(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => FolderInside(folder: folder),
-                  ),
+                  '/folderInside',
+                  arguments: folder,
                 );
               },
               onEdit: () => onEditFolder(index),

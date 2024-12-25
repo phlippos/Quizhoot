@@ -43,10 +43,15 @@ abstract class BaseService {
     'classroom-add': 'classrooms/add/',    // To create a new classroom
     'classroom-delete': 'classrooms/delete/<int:pk>/',  // To delete a classroom by its ID
     'classroom-update': 'classrooms/update/<int:pk>/',  // To update a classroom by its ID
-
+    'classroom-add-set': 'classrooms/<int:pk>/add-set/',  // To add a set to a classroom
+    'classroom-remove-set': 'classrooms/<int:pk>/remove-set/',  // To remove a set from a classroom
+    'classroom-add-folder': 'classrooms/<int:pk>/add-folder/',  // To add a folder to a classroom
+    'classroom-remove-folder': 'classrooms/<int:pk>/remove-folder/',  // To remove a folder from a classroom
+    'classroom-list-sets-folders': 'classrooms/<int:pk>/list-sets-folders/',  // To list all sets and folders in a classroom
     'classroom-user-list': 'classrooms_user/list/',
     'classroom-members-list': 'classrooms_user/members_list/<int:classroom_id>/',
     'classroom-user-add-user': 'classrooms_user/add_user_2_classroom/',
+    'classroom-remove-user':'classrooms_user/remove_user_from_classroom/<int:classroom_id>/',
 
     // Folder routes
     'create-folder': 'folders/create/',

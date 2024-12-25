@@ -44,12 +44,17 @@ urlpatterns = [
     path('classrooms_user/list/', ClassroomUserViewSet.as_view({'get': 'list_users_classrooms'}), name='list_users_classrooms'),
     path('classrooms_user/members_list/<int:classroom_id>/',ClassroomUserViewSet.as_view({'get':'list_members_of_classrooms'}),name='list_members_of_classrooms'),
     path('classrooms_user/add_user_2_classroom/',ClassroomUserViewSet.as_view({'post':'add_user_2_classroom'}), name='add_user_2_classroom'),
+    path('classrooms_user/remove_user_from_classroom/<int:classroom_id>/',ClassroomUserViewSet.as_view({'delete':'delete_user_from_classroom'}), name='delete_user_from_classroom'),
     
     path('classrooms/list/',ClassroomViewSet.as_view({'get': 'list_classrooms'}),name='list_classrooms'),
     path('classrooms/add/', ClassroomViewSet.as_view({'post': 'add_classroom'}), name='add_classroom'),
     path('classrooms/delete/<int:pk>/', ClassroomViewSet.as_view({'delete': 'delete_classroom'}), name='delete_classroom'),
     path('classrooms/update/<int:pk>/', ClassroomViewSet.as_view({'put': 'update_classroom'}), name='update_classroom'),
-    
+    path('classrooms/<int:pk>/add-set/', ClassroomViewSet.as_view({'post': 'add_set_to_classroom'}), name='add_set_to_classroom'),
+    path('classrooms/<int:pk>/remove-set/', ClassroomViewSet.as_view({'delete': 'remove_set_from_classroom'}), name='remove_set_from_classroom'),
+    path('classrooms/<int:pk>/add-folder/', ClassroomViewSet.as_view({'post': 'add_folder_to_classroom'}), name='add_folder_to_classroom'),
+    path('classrooms/<int:pk>/remove-folder/', ClassroomViewSet.as_view({'delete': 'remove_folder_from_classroom'}), name='remove_folder_from_classroom'),
+    path('classrooms/<int:pk>/list-sets-folders/', ClassroomViewSet.as_view({'get': 'list_sets_and_folders'}), name='list_sets_and_folders'),
     
     # Folder routes
     path('folders/create/', FolderViewSet.as_view({'post': 'create_folder'}), name='create_folder'),
