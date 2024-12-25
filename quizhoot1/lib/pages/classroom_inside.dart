@@ -7,6 +7,7 @@ import 'classroom_folders.dart'; // Import the new Folder page
 import '../classes/Classroom.dart';
 
 
+
 class ClassroomInside extends StatefulWidget {
   const ClassroomInside({super.key});
 
@@ -28,6 +29,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
         vsync: this,
         initialIndex: 0); // Set initialIndex to 0 or a valid index
 
+
   }
   @override
   void didChangeDependencies() {
@@ -43,6 +45,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
     super.dispose();
   }
 
+  final int classroomId = 1;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,6 +91,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
         ],
       ),
       bottomNavigationBar: const CustomBottomNav(initialIndex: 0),
+
 
     );
   }

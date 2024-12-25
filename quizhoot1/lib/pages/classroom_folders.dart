@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quizhoot/classes/Classroom.dart';
-
 import '../classes/Folder.dart';
 import '../classes/IComponent.dart';
 import '../classes/Set.dart';
@@ -37,7 +36,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
       // Load components (sets and folders)
       await _classroom.listSetsAndFolders();
       _components = _classroom.components;
-
+      
       setState(() {
         _isLoading = false;
       });
@@ -183,7 +182,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF3A1078),
-        title: const Text('Folders and Sets'),
+        title: const Text('Folders'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -276,4 +275,3 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
     );
   }
 }
-

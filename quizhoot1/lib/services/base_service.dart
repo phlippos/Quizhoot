@@ -61,10 +61,12 @@ abstract class BaseService {
     'add-set-to-folder': 'folders/<int:pk>/add_set/',
     'remove-set-from-folder': 'folders/<int:pk>/remove_set/<int:set_id>/',
     'list-sets-in-folder': 'folders/<int:pk>/sets/',
+        
+    'chat-connect': 'ws://your-backend-url/ws/chat',
+    'chat-send': 'chat/messages/send',
+    'chat-history': 'chat/messages/history',
 
   });
-
-
 
   String? getLink(String key, [Map<String, String>? params]) {
     String? endpoint = _links[key];

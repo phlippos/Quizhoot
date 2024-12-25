@@ -18,10 +18,12 @@ class ClassroomViewPage extends StatelessWidget {
       initialIndex: 2, // Set the initial tab to index 2 (last tab)
       child: Scaffold(
         appBar: CustomTopNav(initialIndex: 2), // Custom top navigation bar
-
-        body: ClassroomContent(), // Main content of the page, which displays the classrooms
-        backgroundColor: Color(0xFF3A1078), // Background color for the entire page
-        bottomNavigationBar: CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+        body:
+            ClassroomContent(), // Main content of the page, which displays the classrooms
+        backgroundColor:
+            Color(0xFF3A1078), // Background color for the entire page
+        bottomNavigationBar:
+            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
       ),
     );
   }
@@ -142,6 +144,7 @@ class ClassroomCard extends StatelessWidget {
   final VoidCallback onDelete; // New callback for deleting a classroom
   final Function(String) onEdit;
 
+
   const ClassroomCard({
     super.key,
     required this.user, // Initialize user
@@ -224,6 +227,8 @@ class ClassroomCard extends StatelessWidget {
     );
   }
 
+
+  // Show edit dialog to edit the classroom name
   void _showEditDialog(
       BuildContext context, String currentClassName, Function(String) onEdit) {
     TextEditingController controller = TextEditingController(text: currentClassName);
@@ -236,7 +241,7 @@ class ClassroomCard extends StatelessWidget {
           content: TextField(
             controller: controller,
             decoration:
-            const InputDecoration(hintText: 'Enter new classroom name'),
+                const InputDecoration(hintText: 'Enter new classroom name'),
           ),
           actions: [
             TextButton(

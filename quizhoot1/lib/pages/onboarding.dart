@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:quizhoot/pages/loginPage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -137,8 +138,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_currentPage == _titles.length - 1) {
+                final pres = await SharedPreferences.getInstance();
+                pres.setBool("onboarding", true);
+
+                if (!mounted) return;
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                 );

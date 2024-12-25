@@ -1,42 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../classes/Chat_message.dart';
+import '../services/chat_service.dart';
+import '../classes/User.dart';
 
 class ClassroomChat extends StatefulWidget {
-  const ClassroomChat({Key? key}) : super(key: key);
+  final int classroomId;
+
+  const ClassroomChat({
+    super.key,
+    required this.classroomId,
+  });
 
   @override
   _ClassroomChatState createState() => _ClassroomChatState();
 }
 
 class _ClassroomChatState extends State<ClassroomChat> {
-  final List<Map<String, String>> _messages = [];
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  Map<String, String>? _pinnedMessage;
-  bool isSending = false;
+  final List<ChatMessage> _messages = [];
+  late final ChatService _chatService;
+  late final User _currentUser;
+  bool _isLoading = true;
 
-  void _sendMessage() {
-    if (_controller.text.isNotEmpty) {
+  @override
+  void initState() {
+    super.initState();
+    _chatService = ChatService.instance;
+    _currentUser = Provider.of<User>(context, listen: false);
+    _initializeChat();
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      // Load message history
+      final messages = await _chatService.getMessageHistory(widget.classroomId);
       setState(() {
-        isSending = true;
+        _messages.addAll(messages);
+        _isLoading = false;
       });
 
-      // TODO: Send message to the backend
-      Future.delayed(const Duration(milliseconds: 500), () {
-        setState(() {
-          _messages.add({
-            "sender": "Me",
-            "text": _controller.text,
-          });
-          _controller.clear();
-          isSending = false;
-        });
+      // Connect to WebSocket
+      await _chatService.connectToChat(widget.classroomId);
+      _chatService.messageStream.listen(_handleNewMessage);
+    } catch (e) {
+      _showError('Failed to initialize chat: $e');
+    }
+  }
 
-        _scrollController.animateTo(
-          _scrollController.position.minScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+  void _handleNewMessage(ChatMessage message) {
+    setState(() {
+      _messages.add(message);
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    try {
+      await _chatService.sendMessage(
+        widget.classroomId,
+        _messageController.text.trim(),
+      );
+      _messageController.clear();
+    } catch (e) {
+      _showError('Failed to send message: $e');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
   }
 
@@ -131,156 +177,104 @@ class _ClassroomChatState extends State<ClassroomChat> {
   }
 
   @override
+  void dispose() {
+    _chatService.dispose();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Classroom Chat'),
-        backgroundColor: const Color(0xFF3A1078),
-      ),
       backgroundColor: const Color(0xFF3A1078),
-      body: Column(
-        children: [
-          if (_pinnedMessage != null)
-            Container(
-              margin: const EdgeInsets.all(8.0),
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF3A1078), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "📌 Pinned Message",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF3A1078),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.grey),
-                        onPressed: () {
-                          setState(() {
-                            _pinnedMessage = null;
-                            // TODO: Notify backend about unpinning the message
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _pinnedMessage!["text"]!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              reverse: true,
-              padding: const EdgeInsets.all(16.0),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[_messages.length - 1 - index];
-                final isMe = message["sender"] == "Me";
-
-                return GestureDetector(
-                  onLongPress: () =>
-                      _showMessageOptions(_messages.length - 1 - index),
-                  child: Align(
-                    alignment:
-
-                    isMe ? Alignment.centerRight : Alignment.centerLeft,
-
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isMe
-                            ? Colors.white
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            message["sender"]!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: isMe
-                                  ? const Color(0xFF3A1078)
-                                  : Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            message["text"]!,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isMe
-                                  ? const Color(0xFF3A1078)
-                                  : Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          if (isSending)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                "Sending...",
-                style: TextStyle(color: Colors.grey[300], fontSize: 12),
-              ),
-            ),
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your message...',
-                      border: InputBorder.none,
-                    ),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(8),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      return MessageBubble(
+                        message: message,
+                        isMe: message.senderId == _currentUser.id.toString(),
+                      );
+                    },
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFF3A1078)),
-                  onPressed: _sendMessage,
-                ),
+                _buildMessageInput(),
               ],
             ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.attach_file),
+            onPressed: () {
+              // TODO: Implement file attachment
+            },
+          ),
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: const InputDecoration(
+                hintText: 'Type a message...',
+                border: InputBorder.none,
+              ),
+              onSubmitted: (_) => _sendMessage(),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: _sendMessage,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  final ChatMessage message;
+  final bool isMe;
+
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blue[100] : Colors.grey[300],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message.content),
+            Text(
+              '${message.timestamp.hour}:${message.timestamp.minute}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }
