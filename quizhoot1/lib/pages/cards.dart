@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
 
 class CardsPage extends StatefulWidget {
-  const CardsPage({Key? key}) : super(key: key);
+  const CardsPage({super.key});
 
   @override
   _CardsPageState createState() => _CardsPageState();
@@ -17,9 +17,18 @@ class _CardsPageState extends State<CardsPage> {
     {'term': 'Pear', 'definition': 'Birne'},
   ];
 
+  List<Map<String, String>> unknownWords = [];
   int currentIndex = 0; // Tracks the current card index
+  int correctCount = 0; // Number of correct answers (swiped right)
+  int incorrectCount = 0; // Number of incorrect answers (swiped left)
   Offset _dragOffset = Offset.zero; // Tracks the swipe offset
   double _opacity = 1.0; // Controls the card's opacity
+
+  @override
+  void initState() {
+    super.initState();
+    unknownWords.addAll(flashcards); // Initially all words are unknown
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,54 +38,66 @@ class _CardsPageState extends State<CardsPage> {
         backgroundColor: const Color(0xFF3A1078),
       ),
       body: Center(
-        child: currentIndex < flashcards.length
-            ? GestureDetector(
-                onPanUpdate: (details) {
+        child: unknownWords.isNotEmpty
+            ? Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Display Known and Unknown Counts
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Known: $correctCount Unknown: ${unknownWords.length}',
+                style: const TextStyle(fontSize: 20, color: Colors.white),
+              ),
+            ),
+            GestureDetector(
+              onPanUpdate: (details) {
+                setState(() {
+                  _dragOffset += details.delta;
+                });
+              },
+              onPanEnd: (details) {
+                if (_dragOffset.dx > 200) {
+                  _swipeRight(); // Swipe right to the next card
+                } else if (_dragOffset.dx < -200) {
+                  _swipeLeft(); // Swipe left to the next card
+                } else {
                   setState(() {
-                    _dragOffset += details.delta;
+                    _dragOffset = Offset.zero; // Reset position
+                    _opacity = 1.0; // Reset opacity
                   });
-                },
-                onPanEnd: (details) {
-                  if (_dragOffset.dx > 200) {
-                    _swipeRight(); // Swipe right to the next card
-                  } else if (_dragOffset.dx < -200) {
-                    _swipeLeft(); // Swipe left to the next card
-                  } else {
-                    setState(() {
-                      _dragOffset = Offset.zero; // Reset position
-                      _opacity = 1.0; // Reset opacity
-                    });
-                  }
-                },
-                child: AnimatedContainer(
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                transform: Matrix4.translationValues(
+                  _dragOffset.dx,
+                  0, // Vertical movement is fixed
+                  0,
+                ),
+                child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
-                  transform: Matrix4.translationValues(
-                    _dragOffset.dx,
-                    0, // Vertical movement is fixed
-                    0,
-                  ),
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 200),
-                    opacity: _opacity,
-                    child: FlipCard(
-                      key: ValueKey(currentIndex), // Reset flip state
-                      front: _buildCardFace(
-                        flashcards[currentIndex]['term']!,
-                        _getCardColor(),
-                      ),
-                      back: _buildCardFace(
-                        flashcards[currentIndex]['definition']!,
-                        _getCardColor(),
-                      ),
+                  opacity: _opacity,
+                  child: FlipCard(
+                    key: ValueKey(currentIndex), // Reset flip state
+                    front: _buildCardFace(
+                      unknownWords[currentIndex]['term']!,
+                      _getCardColor(),
+                    ),
+                    back: _buildCardFace(
+                      unknownWords[currentIndex]['definition']!,
+                      _getCardColor(),
                     ),
                   ),
                 ),
-              )
-            : const Text(
-                'All cards finished!',
-                style: TextStyle(color: Colors.white, fontSize: 24),
               ),
-
+            ),
+          ],
+        )
+            : const Text(
+          'All cards finished!',
+          style: TextStyle(color: Colors.white, fontSize: 24),
+        ),
       ),
       backgroundColor: const Color(0xff3A1078),
     );
@@ -87,10 +108,14 @@ class _CardsPageState extends State<CardsPage> {
     setState(() {
       _dragOffset = Offset.zero;
       _opacity = 1.0;
-      if (currentIndex < flashcards.length - 1) {
-        currentIndex++;
-      } else {
-        currentIndex = flashcards.length; // Finish cards
+      correctCount++; // Increment correct count for swipe right
+      // Remove the card from unknownWords only when swiped right
+      unknownWords.removeAt(currentIndex);
+
+      // Ensure the current index stays within the bounds
+      if (currentIndex >= unknownWords.length) {
+        currentIndex = unknownWords.length -
+            1; // If we reached the end, reset to the last card
       }
     });
   }
@@ -100,10 +125,16 @@ class _CardsPageState extends State<CardsPage> {
     setState(() {
       _dragOffset = Offset.zero;
       _opacity = 1.0;
-      if (currentIndex < flashcards.length - 1) {
-        currentIndex++;
-      } else {
-        currentIndex = flashcards.length; // Finish cards
+      incorrectCount++; // Increment incorrect count for swipe left
+      // Do not remove the card, just move it to the back
+      Map<String, String> currentCard = unknownWords[currentIndex];
+      unknownWords.add(currentCard); // Add the card back to the list
+      unknownWords.removeAt(currentIndex); // Remove it from the current index
+
+      // Ensure the current index stays within the bounds
+      if (currentIndex >= unknownWords.length) {
+        currentIndex = unknownWords.length -
+            1; // If we reached the end, reset to the last card
       }
     });
   }

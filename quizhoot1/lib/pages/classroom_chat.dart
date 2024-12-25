@@ -86,6 +86,96 @@ class _ClassroomChatState extends State<ClassroomChat> {
     }
   }
 
+  void _deleteMessage(int index) {
+    setState(() {
+      // TODO: Notify backend about message deletion
+      _messages.removeAt(index);
+    });
+  }
+
+  void _editMessage(int index) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        TextEditingController editController = TextEditingController(
+          text: _messages[index]["text"],
+        );
+        return AlertDialog(
+          title: const Text("Edit Message"),
+          content: TextField(
+            controller: editController,
+            decoration: const InputDecoration(hintText: "Enter new message"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  // TODO: Update the message on the backend
+                  _messages[index]["text"] = editController.text;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _pinMessage(int index) {
+    setState(() {
+      // TODO: Notify backend about pinned message
+      _pinnedMessage = _messages[index];
+    });
+  }
+
+  void _showMessageOptions(int index) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.push_pin),
+              title: const Text("Pin Message"),
+              onTap: () {
+                Navigator.pop(context);
+                _pinMessage(index);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text("Edit Message"),
+              onTap: () {
+                Navigator.pop(context);
+                _editMessage(index);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text(
+                "Delete Message",
+                style: TextStyle(color: Colors.red),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteMessage(index);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _chatService.dispose();

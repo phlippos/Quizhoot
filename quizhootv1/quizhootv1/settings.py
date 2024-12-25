@@ -108,7 +108,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'quizhoot',  
         'USER': 'root', 
-        'PASSWORD': 'ahmet', 
+        'PASSWORD': 'cihangir', 
         'HOST': 'localhost',  
         'PORT': '3306',  
     }

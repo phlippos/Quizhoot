@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder
+
 """
     Django'da serialization, Django modellerini (veya queryset'lerini) JSON, XML veya diğer biçimlere dönüştürmeyi sağlar.
     Bu, verilerin web API'leri aracılığıyla dışa aktarılması veya başka sistemlere iletilmesi gibi durumlar için faydalıdır.
@@ -66,3 +67,30 @@ class Quiz_User_SetSerializer(serializers.ModelSerializer):
         model = Quiz_User_Set
         fields = '__all__'
          
+class Classroom_Serializer(serializers.ModelSerializer):
+    size = serializers.IntegerField(read_only=True)
+    creator_username = serializers.CharField(read_only=True)
+    class Meta:
+        model = Classroom
+        fields = '__all__'
+        
+class Classroom_User_Serializer(serializers.ModelSerializer):
+    size = serializers.IntegerField(read_only=True)
+    creator_username = serializers.CharField(read_only=True)
+    member_username = serializers.CharField(read_only=True)
+    class Meta:
+        model = classroom_user
+        fields = '__all__'
+        
+        
+class FolderSerializer(serializers.ModelSerializer):
+    # This will display a list of Set IDs
+    sets = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=Set.objects.all(), 
+        required=False
+    )
+    
+    class Meta:
+        model = Folder
+        fields = ['id', 'user_id', 'folder_name', 'sets']

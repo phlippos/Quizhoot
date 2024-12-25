@@ -1,87 +1,223 @@
 import 'package:flutter/material.dart';
-import 'custom_top_nav.dart'; // Custom top navigation widget
-import 'custom_bottom_nav.dart'; // Custom bottom navigation widget
-import 'set_inside.dart'; // Imports the page to show individual set details
-import 'package:provider/provider.dart'; // For managing state and actions
+import 'package:provider/provider.dart';
+import '../classes/User.dart';
+import 'custom_top_nav.dart';       // Custom top navigation widget
+import 'custom_bottom_nav.dart';   // Custom bottom navigation widget
+import 'set_inside.dart';          // Page showing individual set details
 
-class FolderInside extends StatelessWidget {
+// Suppose you have these in your project:
+import 'package:quizhoot/classes/Folder.dart';
+import 'package:quizhoot/classes/Set.dart';
+
+class FolderInside extends StatefulWidget {
+
+  // If you push here using Navigator, pass a Folder object:
+  // Navigator.pushNamed(context, '/folderInside', arguments: myFolder);
   const FolderInside({super.key});
 
   @override
+  State<FolderInside> createState() => _FolderInsideState();
+}
+
+class _FolderInsideState extends State<FolderInside> {
+  bool _isLoading = true;
+  bool _hasError = false;
+  List<Set> _sets = [];
+  late Folder _folder;
+  @override
+  void didChangeDependencies(){
+    super.didChangeDependencies();
+    _fetchFolderSets();
+  }
+
+  /// Fetch sets from the server for this folder
+  Future<void> _fetchFolderSets() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      _folder = ModalRoute.of(context)?.settings.arguments as Folder;
+      // fetchSetsInFolder() is a method from your Folder class
+      // that calls the server to get sets for a specific folder.
+      final folderSets = await _folder.fetchSetsInFolder();
+      setState(() {
+        _sets = folderSets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print("Error fetching sets for folder: $e");
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  Future<void> _deleteSet(Set set) async {
+    try {
+      await _folder.removeSetFromFolder(set); // Assume delete() is a method in the Set class that deletes the set
+      setState(() {
+        _sets.remove(set);
+      });
+    } catch (e) {
+      print("Error deleting set: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete set')),
+      );
+    }
+  }
+  void _editSet(Set set){
+    Navigator.pushNamed(context, '/flashcardUpdate', arguments: set);
+  }
+
+
+  void _showAddSetDialog() {
+    List<Set> availableSets = [];
+    List<bool> setSelections = [];
+
+    Future<void> _loadAvailableSets() async {
+      final user = Provider.of<User>(context, listen: false);
+      try {
+        //await user.fetchSets(); // Fetch the sets from the user object
+        setState(() {
+          availableSets = user.getSets();
+          print(availableSets.length);
+          setSelections = List<bool>.filled(availableSets.length, false);
+        });
+      } catch (e) {
+        print('Error loading sets: $e');
+      }
+    }
+
+    // Load the available sets when the dialog is shown
+    _loadAvailableSets();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Add Sets'),
+          content: availableSets.isEmpty
+              ? const Center(child: CircularProgressIndicator()) // Loading indicator
+              : SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(availableSets.length, (index) {
+                return CheckboxListTile(
+                  title: Text(availableSets[index].name),
+                  value: setSelections[index],
+                  onChanged: (bool? value) {
+                    setState(() {
+                      setSelections[index] = value ?? false;
+                    });
+                  },
+                );
+              }),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                for (int i = 0; i < setSelections.length; i++) {
+                  if (setSelections[i]) {
+                    await _folder.addSetToFolder(availableSets[i]);
+                  }
+                }
+                _fetchFolderSets();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  @override
   Widget build(BuildContext context) {
-    return const DefaultTabController(
-      length: 3, // Defines the number of tabs
-      initialIndex: 1, // Sets the initial tab index
-      child: Scaffold(
-        appBar: CustomTopNav(
-            initialIndex: 1), // Custom top navigation bar with a specific index
-        body: SetContent(), // Body content with a list of sets
-        backgroundColor: Color(0xFF3A1078), // Background color for the scaffold
-        bottomNavigationBar:
-            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
-      ),
+    return DefaultTabController(
+        length: 3,         // Number of tabs
+        initialIndex: 1,   // Sets the initial tab index
+        child: Scaffold(
+        appBar: const CustomTopNav(initialIndex: 1),
+    backgroundColor: const Color(0xFF3A1078),
+    bottomNavigationBar: const CustomBottomNav(initialIndex: 2),
+    body: _isLoading
+    ? const Center(child: CircularProgressIndicator())
+        : _hasError
+    ? const Center(
+    child: Text(
+    'Error loading folder sets.',
+    style: TextStyle(color: Colors.white),
+    ),
+    )
+        : _sets.isEmpty
+    ? const Center(
+    child: Text(
+    'No sets found in this folder.',
+    style: TextStyle(color: Colors.white, fontSize: 16),
+    ),
+    )
+        : SetListView(sets: _sets, onDelete: _deleteSet,onEdit: _editSet),
+    floatingActionButton: FloatingActionButton(
+    onPressed: _showAddSetDialog,
+    backgroundColor: Colors.white,
+    child: const Icon(Icons.add, color: Colors.blue),
+    ),
+    ),
     );
   }
 }
 
-class SetContent extends StatefulWidget {
-  const SetContent({super.key});
+class SetListView extends StatelessWidget {
+  final List<Set> sets;
+  final Function(Set) onDelete;
+  final Function(Set) onEdit;
 
-  @override
-  _SetContentState createState() => _SetContentState();
-}
-
-class _SetContentState extends State<SetContent> {
-  List<Set> sets = [
-    Set(name: 'Set 1', size: 5, creator: 'Creator A'),
-    Set(name: 'Set 2', size: 8, creator: 'Creator B'),
-  ];
-
-  // Delete set method
-  void _deleteSet(int index) {
-    setState(() {
-      sets.removeAt(index);
-    });
-  }
+  const SetListView({super.key, required this.sets, required this.onDelete,required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: sets.map((set) {
-          return Column(
-            children: [
-              SetCard(
-                  set: set,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SetInside(),
-                      ),
-                    );
-                  },
-                  onDelete: () => _deleteSet(sets.indexOf(set)),
-                  onEdit: () => {}),
-              const SizedBox(height: 16),
-            ],
-          );
-        }).toList(),
-      ),
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      itemCount: sets.length,
+      separatorBuilder: (context, _) => const SizedBox(height: 16),
+      itemBuilder: (ctx, index) {
+        final setData = sets[index];
+        return SetCard(
+          setName: setData.name,
+          termCount: '${setData.size} Terms',
+          onTap: () {
+            // Navigate to the SetInside page (pass the set as an argument)
+            Navigator.pushNamed(context, '/setInside', arguments: setData);
+          },
+          onDelete: () => onDelete(setData),
+          onEdit: () => onEdit(setData),
+        );
+      },
     );
   }
 }
 
 class SetCard extends StatelessWidget {
-  final Set set;
+  final String setName;
+  final String termCount;
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
 
   const SetCard({
     super.key,
-    required this.set,
+    required this.setName,
+    required this.termCount,
     required this.onTap,
     required this.onDelete,
     required this.onEdit,
@@ -90,23 +226,23 @@ class SetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap, // Executes the onTap function when tapped
+      onTap: onTap, // Execute the onTap function when tapped
       child: Container(
-        width: 300, // Width of the card
-        padding: const EdgeInsets.all(16), // Padding inside the card
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white, // Card background color
-          borderRadius: BorderRadius.circular(12), // Rounded corners
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
-              color: Colors.black26, // Shadow color
-              blurRadius: 8, // Shadow blur effect
-              offset: Offset(0, 2), // Shadow position
+              color: Colors.black26,
+              blurRadius: 8,
+              offset: Offset(0, 2),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -114,20 +250,22 @@ class SetCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    set.name,
+                    setName,
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 IconButton(
                     icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
-                    onPressed: () => {}
-                    //     // should be similar to flashcard_update.dart
-                    ),
+                    onPressed: onEdit
+                  //
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
                   onPressed:
-                      onDelete, // Executes the onDelete function when pressed
+                  onDelete,
                 ),
               ],
             ),
@@ -136,15 +274,7 @@ class SetCard extends StatelessWidget {
               children: [
                 const Icon(Icons.workspaces, size: 20),
                 const SizedBox(width: 5),
-                Text(set.size.toString()),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.account_circle, size: 20),
-                const SizedBox(width: 5),
-                Text(set.creator),
+                Text(termCount),
               ],
             ),
           ],
@@ -152,13 +282,4 @@ class SetCard extends StatelessWidget {
       ),
     );
   }
-}
-
-// Assuming Set class definition
-class Set {
-  final String name;
-  final int size;
-  final String creator;
-
-  Set({required this.name, required this.size, required this.creator});
 }

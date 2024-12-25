@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:quizhoot/pages/clasroom_creation.dart';
+import 'package:quizhoot/pages/classroom_creation.dart';
 import 'package:quizhoot/pages/classroomsAll.dart';
 import 'package:quizhoot/pages/flashcard_creation.dart';
 import 'package:quizhoot/pages/flashcardsAll.dart';
@@ -47,19 +47,6 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
-              // Option to create a quiz
-              // ListTile(
-              //   leading: const Icon(Icons.quiz, color: Colors.orange),
-              //   title: const Text('Create Quiz'),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     Navigator.push(
-              //       context,
-              //       MaterialPageRoute(
-              //           builder: (context) => const CreateQuizPage()),
-              //     );
-              //   },
-              // ),
               // Option to create a folder
               ListTile(
                 leading: const Icon(Icons.folder_open, color: Colors.green),
