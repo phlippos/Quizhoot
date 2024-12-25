@@ -29,9 +29,8 @@ class QuizService extends BaseService{
     }else{
       for (var flashcard in filteredFlashcards) {
         String correctDefinition = flashcard.definition;
-        List incorrectDefinitions = definitions.where((def) => def != correctDefinition).toList();
+        List incorrectDefinitions = definitions.where((def) => def != correctDefinition).toList(); // break
         incorrectDefinitions.shuffle();
-
         List<String> options = [correctDefinition, incorrectDefinitions[0], incorrectDefinitions[1], incorrectDefinitions[2]];
         options.shuffle();
 

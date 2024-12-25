@@ -39,11 +39,9 @@ class CustomTopNav extends StatelessWidget implements PreferredSizeWidget {
               );
               break;
             case 2:
-              Navigator.pushReplacement(
+              Navigator.pushNamed(
                 context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const ClassroomViewPage()), // Navigate to the Classroom view
+                '/classroomView',
               );
               break;
           }

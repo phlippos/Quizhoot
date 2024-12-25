@@ -35,12 +35,12 @@ class _SetContentState extends State<SetContent> {
   bool _isLoading = true; // Add a loading state
   @override
   void initState() {
-    _user = Provider.of<User>(context,listen:false);
+    _user = Provider.of<User>(context, listen: false);
     super.initState();
     _fetchSets(_user);
   }
 
-  _deleteSet(int index){
+  _deleteSet(int index) {
     _user.components.elementAt(index).remove();
     _user.components.removeAt(index);
     setState(() {
@@ -50,11 +50,8 @@ class _SetContentState extends State<SetContent> {
 
   Future<void> _fetchSets(User user) async {
     try {
-      List<Map<String, dynamic>> fetchedSets = await Set.fetchSets();
+      await user.fetchSets();
 
-      fetchedSets.forEach((set){
-        user.addComponent(Set(set["id"],set["set_name"], set["size"]));
-      });
       setState(() {
         _isLoading = false; // Update loading state when data is fetched
       });
@@ -83,45 +80,44 @@ class _SetContentState extends State<SetContent> {
               ],
             )
           : _user.components.isEmpty
-          ? const Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'You have not created any sets yet.',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 16),
-          CircularProgressIndicator(),
-        ],
-      )
-          : Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: _user.getSets().map((set) {
-
-          return Column(
-            children: [
-              SetCard(
-                set:set,
-                creator: _user.username,
-                onTap: () {
-
-                  Navigator.pushNamed(
-                    context,
-                    '/setInside',
-                    arguments: set,
-                  );
-                },
-                onDelete: () => _deleteSet(_user.components.indexOf(set)), // Pass delete callback
-              ),
-              const SizedBox(height: 16),
-            ],
-          );
-        }).toList(),
-      ),
+              ? const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'You have not created any sets yet.',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    CircularProgressIndicator(),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _user.getSets().map((set) {
+                    return Column(
+                      children: [
+                        SetCard(
+                          set: set,
+                          creator: _user.username,
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/setInside',
+                              arguments: set,
+                            );
+                          },
+                          onDelete: () => _deleteSet(_user.components
+                              .indexOf(set)), // Pass delete callback
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  }).toList(),
+                ),
     );
   }
 }
@@ -174,12 +170,9 @@ class SetCard extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
-                  onPressed: () async{
-                    Navigator.pushNamed(
-                        context,
-                        '/flashcardUpdate',
-                        arguments: set
-                    );
+                  onPressed: () async {
+                    Navigator.pushNamed(context, '/flashcardUpdate',
+                        arguments: set);
                   },
                 ),
                 IconButton(

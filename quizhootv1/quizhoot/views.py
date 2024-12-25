@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import connection
 from rest_framework import status
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set
-from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder
+from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -310,5 +310,365 @@ class QuizViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(quiz)
             return Response(serializer.data,status=status.HTTP_200_OK)
         return Response(serializer.errors,status=status.HTTP_404_NOT_FOUND)
-            
         
+        
+class ClassroomUserViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = Classroom_User_Serializer
+    queryset = classroom_user.objects.all()
+    @staticmethod
+    def add_admin_2_classroom(self,classroom_id, user_id, user_role):
+        data = {
+            'classroom_id': classroom_id,
+            'user_id': user_id,
+            'user_role': user_role
+        }
+        serializer = Classroom_User_Serializer(data=data)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return True, serializer.data
+        return False, serializer.errors
+    
+    
+    def add_user_2_classroom(self,request):
+        user_id = User.get_user_id(request.user.username)
+        
+        classroom = Classroom.objects.get(id=request.data.get('classroom_id'))
+        if classroom:
+            serializer = self.get_serializer(data = {'classroom_id':classroom.id, 'user_id': user_id, 'user_role': False })
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            
+    def list_users_classrooms(self,request):
+
+        user_id = User.get_user_id(request.user.username)
+        print(user_id)
+        
+        classrooms = Classroom.objects.raw("""
+            SELECT 
+                c.*, 
+                (SELECT COUNT(*) 
+                FROM quizhoot_classroom_user cu 
+                WHERE cu.classroom_id = c.id) AS size,
+                usr.username AS creator_username
+            FROM 
+                quizhoot_classroom c
+            INNER JOIN 
+                quizhoot_classroom_user u 
+            ON 
+                c.id = u.classroom_id
+            INNER JOIN 
+                quizhoot_user usr 
+            ON 
+                c.creator_id = usr.id
+            WHERE 
+                u.user_id = %s   
+            """, [user_id])
+        
+   
+        serializer = Classroom_Serializer(classrooms, many = True)
+        print("classroom_size : ",serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='list')
+    def list_members_of_classrooms(self,request,classroom_id = None):
+        classroom = Classroom.objects.get(id = classroom_id)
+        if classroom : 
+            members = classroom_user.objects.raw("""
+                                                SELECT cu.id, u.username as member_username, cu.user_role FROM quizhoot_classroom_user cu INNER JOIN quizhoot_user u on cu.user_id = u.id WHERE cu.classroom_id = %s
+                                                """,[classroom_id])
+            
+            serializer = Classroom_User_Serializer(members,many = True)
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        else :
+            Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+    """@staticmethod
+    def update_user_role(self,classroom_id, user_id, new_role):
+        try:
+            classroom_user = classroom_user.objects.get(classroom_id=classroom_id, user_id=user_id)
+            classroom_user.user_role = new_role
+            classroom_user.save()
+            return True, "User role updated successfully :)"
+        except classroom_user.DoesNotExist:
+            return False, "Classroom user not found!!!!"
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def delete_user_from_classroom(self,classroom_id, user_id):
+        try:
+            classroom_user = classroom_user.objects.get(classroom_id=classroom_id, user_id=user_id)
+            classroom_user.delete()
+            return True, "User removed from classroom successfully bye"
+        except classroom_user.DoesNotExist:
+            return False, "Classroom user not found!!!!!"
+        except Exception as e:
+            return False, str(e)"""
+        
+        
+        
+class ClassroomViewSet(viewsets.ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = Classroom_Serializer
+    queryset = Classroom.objects.all()
+
+    @action(detail=False, methods=['post'], url_path='add')
+    def add_classroom(self, request):
+        user_id = User.get_user_id(request.user.username)
+        serializer = self.get_serializer(data={
+            'classroom_name': request.data.get('classroom_name'),
+            'creator_id': user_id
+        })
+        if serializer.is_valid():
+            classroom_instance = serializer.save()
+            classroom_id = classroom_instance.id
+            success,response_data = ClassroomUserViewSet.add_admin_2_classroom(classroom_id=classroom_id,user_id=user_id,user_role=True)
+            if success:
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                classroom_instance.delete()
+                return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='list')
+    def list_classrooms(self, request):
+        classrooms = self.get_queryset()
+
+        # Prepare an empty list to hold the classroom data with size and creator_name
+        classroom_data = []
+
+        for classroom in classrooms:
+            # Calculate the size (number of students in the classroom)
+            size = classroom_user.objects.filter(classroom_id=classroom.id).count()
+            
+            # Get the creator's name (assuming `creator_id` points to a User model)
+            creator_name = classroom_user.objects.filter(classroom_id=classroom.id, user_role=True).first()
+            creator_name = creator_name.user_id.username if creator_name else None
+
+            # Add the classroom data, including size and creator_name
+            classroom_data.append({
+                "id": classroom.id,
+                "classroom_name": classroom.classroom_name,
+                "size": size,
+                "creator_username": creator_name,
+            })
+        # Return the serialized data in the response
+        return Response(classroom_data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['delete'], url_path='delete')
+    def delete_classroom(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk, creator_id=request.user.id)
+            classroom.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['put'], url_path='update')
+    def update_classroom(self, request, pk=None):
+        try:
+            classroom = Classroom.objects.get(pk=pk, creator_id=request.user.id)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(classroom, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    """@action(detail=True, methods=['put'], url_path='update')
+    def update_user_role(self,request):
+        classroom_id = request.data.get("classroom_id")
+        user_id = request.data.get("user_id")
+        new_role = request.data.get("new_role")
+        success, response_data = ClassroomUserService.update_user_role(classroom_id=classroom_id,user_id=user_id,new_role=new_role)
+        if success:
+            return Response(response_data,status=status.HTTP_200_OK)
+        else:
+            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(detail=True, methods=['delete'], url_path='delete')
+    def delete_user(self,request):
+        classroom_id = request.data.get("classroom_id")
+        user_id = request.data.get("user_id")
+        success, response_data = ClassroomUserService.delete_user_from_classroom(classroom_id=classroom_id,user_id=user_id)
+        if success:
+            return Response(response_data,status=status.HTTP_200_OK)
+        else:
+            return Response(response_data,status=status.HTTP_400_BAD_REQUEST)"""
+            
+            
+            
+    
+class FolderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet to handle CRUD operations for Folders,
+    plus adding/removing/listing sets within a folder.
+    """
+    serializer_class = FolderSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Return only folders belonging to the authenticated user
+        return Folder.objects.filter(user_id=self.request.user.id)
+
+    # --------------------------------------------------------------------------
+    # CREATE a new folder
+    # POST /folders/create/
+    # Body: { "name": "Folder Name", "sets": [set_id1, set_id2, ...] (optional) }
+    # --------------------------------------------------------------------------
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_folder(self, request):
+        user_id = User.get_user_id(request.user.username)
+        if not user_id:
+            return Response({"error": "Invalid user"}, status=status.HTTP_400_BAD_REQUEST)
+
+        data = request.data.copy()
+        data['user_id'] = user_id  # Assign the folder to the current user
+
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            folder = serializer.save()
+            return Response(
+                self.get_serializer(folder).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # --------------------------------------------------------------------------
+    # LIST all folders (for this user)
+    # GET /folders/list/
+    # --------------------------------------------------------------------------
+    @action(detail=False, methods=['get'], url_path='list')
+    def list_folders(self, request):
+        folders = self.get_queryset()
+        serializer = self.get_serializer(folders, many=True)
+        print(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # --------------------------------------------------------------------------
+    # RENAME folder (custom partial update just for 'name')
+    # PUT /folders/<pk>/rename/
+    # Body: { "name": "New Folder Name" }
+    # --------------------------------------------------------------------------
+    @action(detail=True, methods=['put'], url_path='rename')
+    def rename_folder(self, request, pk=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        new_name = request.data.get('folder_name')
+        if not new_name:
+            return Response(
+                {"error": "Name is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        folder.folder_name = new_name
+        folder.save()
+        return Response(self.get_serializer(folder).data, status=status.HTTP_200_OK)
+
+    # --------------------------------------------------------------------------
+    # DELETE folder
+    # DELETE /folders/<pk>/
+    # --------------------------------------------------------------------------
+    def destroy(self, request, *args, **kwargs):
+        try:
+            folder = Folder.objects.get(pk=kwargs['pk'], user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        folder.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # ==========================================================================
+    # NEW ACTIONS:
+    # ==========================================================================
+    # 5) ADD A SET to a folder
+    # POST /folders/<pk>/add_set/
+    # Body: { "set_id": <some_set_id> }
+    # ==========================================================================
+    @action(detail=True, methods=['post'], url_path='add_set')
+    def add_set_to_folder(self, request, pk=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        set_id = request.data.get('set_id')
+        if not set_id:
+            return Response({"error": "set_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            set_obj = Set.objects.get(id=set_id)
+        except Set.DoesNotExist:
+            return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Because we use a ManyToMany relation or a many-to-many field:
+        folder.sets.add(set_obj)
+        folder.save()
+
+        return Response({"message": f"Set {set_id} added to folder {pk}"}, status=status.HTTP_200_OK)
+
+    # ==========================================================================
+    # 6) REMOVE A SET from this folder
+    # DELETE /folders/<pk>/remove_set/<set_id>/
+    # ==========================================================================
+    @action(detail=True, methods=['delete'], url_path='remove_set/(?P<set_id>[^/.]+)')
+    def remove_set_from_folder(self, request, pk=None, set_id=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            set_obj = Set.objects.get(id=set_id)
+        except Set.DoesNotExist:
+            return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        folder.sets.remove(set_obj)
+        folder.save()
+
+        return Response({"message": f"Set {set_id} removed from folder {pk}"}, status=status.HTTP_200_OK)
+
+    # ==========================================================================
+    # 7) LIST ALL SETS within this folder
+    # GET /folders/<pk>/sets/
+    # ==========================================================================
+    @action(detail=True, methods=['get'], url_path='sets')
+    def list_sets_in_folder(self, request, pk=None):
+        try:
+            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+        except Folder.DoesNotExist:
+            return Response(
+                {"error": "Folder not found or not yours"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Get all sets in this folder
+        sets = folder.sets.all()
+        serializer = SetSerializer(sets, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

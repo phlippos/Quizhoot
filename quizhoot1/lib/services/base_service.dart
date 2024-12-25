@@ -6,40 +6,44 @@ abstract class BaseService {
 
   BaseService()
       : _links = HashMap<String, String>.from({
-    // User routes
-    'user-list': 'users/list/',
-    'user-create': 'users/create/',
-    'user-login': 'login/',
-    'user-update': 'update/',
+          // User routes
+          'user-list': 'users/list/',
+          'user-create': 'users/create/',
+          'user-login': 'login/',
+          'user-update': 'update/',
 
-    // JWT Token routes
-    'token-obtain-pair': 'api/token/',
-    'token-refresh': 'api/token/refresh/',
+          // JWT Token routes
+          'token-obtain-pair': 'api/token/',
+          'token-refresh': 'api/token/refresh/',
 
-    // Set routes
-    'list-sets': 'sets/list/',
-    'add-set': 'sets/add/',
-    'delete-set': 'sets/delete/<int:pk>/',
-    'update-set': 'sets/update/<int:pk>/',
+          // Set routes
+          'list-sets': 'sets/list/',
+          'add-set': 'sets/add/',
+          'delete-set': 'sets/delete/<int:pk>/',
+          'update-set': 'sets/update/<int:pk>/',
 
-    // Flashcard routes
-    'list-flashcards': 'flashcards/list/',
-    'add-flashcard': 'flashcards/add/',
-    'delete-flashcard': 'flashcards/delete/<int:pk>/',
-    'update-flashcard': 'flashcards/update/<int:pk>/',
+          // Flashcard routes
+          'list-flashcards': 'flashcards/list/',
+          'add-flashcard': 'flashcards/add/',
+          'delete-flashcard': 'flashcards/delete/<int:pk>/',
+          'update-flashcard': 'flashcards/update/<int:pk>/',
 
-    // Set_Flashcard routes
-    'list-set-flashcards': 'set_flashcards/list/<int:set_id>/',
-    'add-set-flashcard': 'set_flashcards/add/',
-    'delete-set-flashcard': 'set_flashcards/delete/<int:flashcard_id>/',
-    'update-set-flashcard': 'set_flashcards/update/<int:flashcard_id>/<int:set_id>/',
+          // Set_Flashcard routes
+          'list-set-flashcards': 'set_flashcards/list/<int:set_id>/',
+          'add-set-flashcard': 'set_flashcards/add/',
+          'delete-set-flashcard': 'set_flashcards/delete/<int:flashcard_id>/',
+          'update-set-flashcard':
+              'set_flashcards/update/<int:flashcard_id>/<int:set_id>/',
 
-    // Quiz routes
-    'add-quiz': 'quiz/add/<int:set_id>/',
-    'list-quiz': 'quiz/list/<int:set_id>/'
-  });
+          // Quiz routes
+          'add-quiz': 'quiz/add/<int:set_id>/',
+          'list-quiz': 'quiz/list/<int:set_id>/',
 
-
+          // Chat endpoints
+          'chat-connect': 'ws://your-backend-url/ws/chat',
+          'chat-send': 'chat/messages/send',
+          'chat-history': 'chat/messages/history',
+        });
 
   String? getLink(String key, [Map<String, String>? params]) {
     String? endpoint = _links[key];

@@ -36,7 +36,11 @@ class QuizHoot extends StatelessWidget {
         '/setInside': (context) => SetInside(),
         '/flashcardUpdate': (context) => UpdateFlashcardPage(),
         '/multipleChoiceQuiz': (context) => QuizView(),
-        '/WrittenQuiz': (context) => WrittenQuiz()
+        '/WrittenQuiz': (context) => WrittenQuiz(),
+        '/classroomCreate':(context) => CreateClassroomPage(),
+        '/classroomView':(context) => ClassroomViewPage(),
+        '/classroomInside':(context) => ClassroomInside(),
+        '/classroomMembers':(context) => ClassroomMembers(),
       },
     );
   }

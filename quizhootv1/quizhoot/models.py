@@ -63,3 +63,33 @@ class Quiz_User_Set(models.Model):
     set_id = models.ForeignKey(Set,on_delete=models.CASCADE,db_column="set_id")
     quiz_id = models.ForeignKey(Quiz,on_delete=models.CASCADE,db_column="quiz_id")
     
+    
+    
+class Classroom(models.Model):
+    classroom_name = models.CharField(max_length=255, db_column="classroom_name", null=False)
+    creator_id = models.ForeignKey(User,on_delete = models.CASCADE,db_column = "creator_id")
+    
+    
+class classroom_user(models.Model):
+    classroom_id = models.ForeignKey(Classroom,on_delete = models.CASCADE,db_column = "classroom_id")
+    user_id = models.ForeignKey(User,on_delete = models.CASCADE,db_column = "user_id")
+    user_role = models.BooleanField(null=False,db_column="user_role",default = False )
+    
+
+class Folder(models.Model):
+    """
+    Each Folder belongs to a User, and can have multiple Sets inside it.
+    A Set can also belong to multiple Folders in this scenario.
+    """
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, related_name='folders')
+    folder_name = models.CharField(max_length=255, db_column="folder_name")
+
+    # Many-to-many relationship with 'Set'
+    sets = models.ManyToManyField('Set', blank=True, related_name='folders')
+    
+    class Meta:
+        db_table = "Folder"
+    
+    def __str__(self):
+        return f"{self.name} (Owned by {self.user.username})"
+    

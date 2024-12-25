@@ -99,15 +99,21 @@ class Flashcard implements IComponent {
       return true;
     }
     Set<String> terms = Set<String>();
+    Set<String> definitions = Set<String>();
     for (Map<String, String> flashcard in flashcards) {
       String? term = flashcard['term'];
+      String? definition = flashcard['definition'];
       if (term == null) {
         continue;
       }
-      if (terms.contains(term)) {
+      if (definition == null){
+        continue;
+      }
+      if (terms.contains(term) || definitions.contains(definition)) {
         return false;
       }
       terms.add(term);
+      definitions.add(definition);
     }
     return true;
   }
