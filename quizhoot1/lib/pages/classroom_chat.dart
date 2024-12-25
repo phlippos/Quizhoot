@@ -20,6 +20,7 @@ class _ClassroomChatState extends State<ClassroomChat> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  ChatMessage? _pinnedMessage; // Define a pinned message variable
   late final ChatService _chatService;
   late final User _currentUser;
   bool _isLoading = true;
@@ -98,7 +99,7 @@ class _ClassroomChatState extends State<ClassroomChat> {
       context: context,
       builder: (context) {
         TextEditingController editController = TextEditingController(
-          text: _messages[index]["text"],
+          text: _messages[index].content,
         );
         return AlertDialog(
           title: const Text("Edit Message"),
@@ -117,7 +118,14 @@ class _ClassroomChatState extends State<ClassroomChat> {
               onPressed: () {
                 setState(() {
                   // TODO: Update the message on the backend
-                  _messages[index]["text"] = editController.text;
+                  _messages[index] = ChatMessage(
+                    id: _messages[index].id,
+                    senderId: _messages[index].senderId,
+                    senderName: _messages[index].senderName,
+                    content: editController.text, // Updated content
+                    timestamp: _messages[index].timestamp,
+                    attachmentUrl: _messages[index].attachmentUrl,
+                  );
                 });
                 Navigator.pop(context);
               },
@@ -191,24 +199,27 @@ class _ClassroomChatState extends State<ClassroomChat> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(8),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      final message = _messages[index];
-                      return MessageBubble(
-                        message: message,
-                        isMe: message.senderId == _currentUser.id.toString(),
-                      );
-                    },
+        children: [
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(8),
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                final message = _messages[index];
+                return GestureDetector(
+                  onLongPress: () => _showMessageOptions(index),
+                  child: MessageBubble(
+                    message: message,
+                    isMe: message.senderId == _currentUser.id.toString(),
                   ),
-                ),
-                _buildMessageInput(),
-              ],
+                );
+              },
             ),
+          ),
+          _buildMessageInput(),
+        ],
+      ),
     );
   }
 
