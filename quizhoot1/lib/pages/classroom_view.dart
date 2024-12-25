@@ -18,6 +18,7 @@ class ClassroomViewPage extends StatelessWidget {
       initialIndex: 2, // Set the initial tab to index 2 (last tab)
       child: Scaffold(
         appBar: CustomTopNav(initialIndex: 2), // Custom top navigation bar
+
         body: ClassroomContent(), // Main content of the page, which displays the classrooms
         backgroundColor: Color(0xFF3A1078), // Background color for the entire page
         bottomNavigationBar: CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
@@ -78,6 +79,13 @@ class _ClassroomContentState extends State<ClassroomContent> {
     });
   }
 
+  // Method to edit a classroom's name
+  void _editClassroom(int index, String newName) {
+    setState(() {
+      classrooms[index]['className'] = newName; // Update the classroom name
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -115,7 +123,9 @@ class _ClassroomContentState extends State<ClassroomContent> {
                 },
                 onDelete: () => _deleteClassroom(i), // Pass delete callback
                 onEdit: (newName) =>
+
                     _editClassroom(i, newName),
+
               ),
             );
           }).toList(),
@@ -139,6 +149,7 @@ class ClassroomCard extends StatelessWidget {
   final VoidCallback onDelete; // New callback for deleting a classroom
   final Function(String) onEdit;
 
+
   const ClassroomCard({
     super.key,
     required this.className,
@@ -158,6 +169,7 @@ class ClassroomCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white, // Background color of the card
+
           borderRadius: BorderRadius.circular(12), // Rounded corners for the card
           boxShadow: const [
             BoxShadow(
@@ -181,13 +193,14 @@ class ClassroomCard extends StatelessWidget {
                     style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
-                // Edit button - navigate to classroom creation page
+                // Edit button - show edit dialog
                 IconButton(
                   icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
                   onPressed: () {
                     _showEditDialog(context, className, onEdit);
                   },
                 ),
+                // Delete button
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
                   onPressed: onDelete, // Call delete function
@@ -217,10 +230,12 @@ class ClassroomCard extends StatelessWidget {
       ),
     );
   }
+
   void _showEditDialog(
       BuildContext context, String currentClassName, Function(String) onEdit) {
     TextEditingController controller =
     TextEditingController(text: currentClassName);
+
 
     showDialog(
       context: context,

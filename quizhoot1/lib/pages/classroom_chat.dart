@@ -208,7 +208,9 @@ class _ClassroomChatState extends State<ClassroomChat> {
                       _showMessageOptions(_messages.length - 1 - index),
                   child: Align(
                     alignment:
+
                     isMe ? Alignment.centerRight : Alignment.centerLeft,
+
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 5),
                       padding: const EdgeInsets.all(10),
