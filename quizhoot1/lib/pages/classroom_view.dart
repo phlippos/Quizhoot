@@ -18,10 +18,12 @@ class ClassroomViewPage extends StatelessWidget {
       initialIndex: 2, // Set the initial tab to index 2 (last tab)
       child: Scaffold(
         appBar: CustomTopNav(initialIndex: 2), // Custom top navigation bar
-
-        body: ClassroomContent(), // Main content of the page, which displays the classrooms
-        backgroundColor: Color(0xFF3A1078), // Background color for the entire page
-        bottomNavigationBar: CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
+        body:
+            ClassroomContent(), // Main content of the page, which displays the classrooms
+        backgroundColor:
+            Color(0xFF3A1078), // Background color for the entire page
+        bottomNavigationBar:
+            CustomBottomNav(initialIndex: 2), // Custom bottom navigation bar
       ),
     );
   }
@@ -86,6 +88,13 @@ class _ClassroomContentState extends State<ClassroomContent> {
     });
   }
 
+  // Method to edit a classroom's name
+  void _editClassroom(int index, String newName) {
+    setState(() {
+      classrooms[index]['className'] = newName; // Update the classroom name
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -123,9 +132,7 @@ class _ClassroomContentState extends State<ClassroomContent> {
                 },
                 onDelete: () => _deleteClassroom(i), // Pass delete callback
                 onEdit: (newName) =>
-
-                    _editClassroom(i, newName),
-
+                    _editClassroom(i, newName), // Pass edit callback
               ),
             );
           }).toList(),
@@ -147,8 +154,7 @@ class ClassroomCard extends StatelessWidget {
   final String teacherName;
   final VoidCallback onTap;
   final VoidCallback onDelete; // New callback for deleting a classroom
-  final Function(String) onEdit;
-
+  final Function(String) onEdit; // Callback for editing
 
   const ClassroomCard({
     super.key,
@@ -169,8 +175,8 @@ class ClassroomCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white, // Background color of the card
-
-          borderRadius: BorderRadius.circular(12), // Rounded corners for the card
+          borderRadius:
+              BorderRadius.circular(12), // Rounded corners for the card
           boxShadow: const [
             BoxShadow(
               color: Colors.black26, // Shadow color
@@ -231,11 +237,12 @@ class ClassroomCard extends StatelessWidget {
     );
   }
 
+
+  // Show edit dialog to edit the classroom name
   void _showEditDialog(
       BuildContext context, String currentClassName, Function(String) onEdit) {
     TextEditingController controller =
-    TextEditingController(text: currentClassName);
-
+        TextEditingController(text: currentClassName);
 
     showDialog(
       context: context,
@@ -245,7 +252,7 @@ class ClassroomCard extends StatelessWidget {
           content: TextField(
             controller: controller,
             decoration:
-            const InputDecoration(hintText: 'Enter new classroom name'),
+                const InputDecoration(hintText: 'Enter new classroom name'),
           ),
           actions: [
             TextButton(
