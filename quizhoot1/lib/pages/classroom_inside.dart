@@ -76,7 +76,7 @@ class _ClassroomInsideState extends State<ClassroomInside>
             },
             child: ClassroomMembers(), // Pass the classroom to ClassroomMembers
           ),
-          ClassroomChat(), // Widget for Chat
+          ClassroomChat(classroomId: _classroom.id!,), // Widget for Chat
           GestureDetector(
             onTap: () {
               // Navigate to ClassroomMembers and pass the classroom object
