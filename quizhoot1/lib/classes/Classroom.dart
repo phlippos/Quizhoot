@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:quizhoot/classes/CNotification.dart';
 import 'package:quizhoot/services/classroom_service.dart';
 
+import '../services/notification_service.dart';
 import 'Folder.dart';
 import 'IComponent.dart'; // Import the service for API interaction
 import 'Set.dart';
+import 'User.dart';
 
 class Classroom {
   int? _id;
@@ -14,8 +17,9 @@ class Classroom {
   List<Map<String, dynamic>> _members = [];
   List<IComponent> _components = [];
   ClassroomService _service = ClassroomService.instance;
+  List<CNotification> _notifications = [];
 
-  // Constructor to initialize the classroom
+ // Constructor to initialize the classroom
   Classroom(this._id, this._classroomName, this._size, this._creatorName);
 
   // Create constructor
@@ -54,6 +58,10 @@ class Classroom {
   }
 
   List<IComponent> get components => _components;
+
+  List<CNotification> getCNotifications(){
+    return _notifications;
+  }
 
   @override
   bool operator ==(Object other) {
@@ -117,6 +125,7 @@ class Classroom {
   // Fetch members of the classroom
   Future<void> fetchMembersOfClassroom() async {
     final response = await _service.fetchMembersOfClassroom(_id!);
+    _members.clear();
     if (response.statusCode == 200) {
       _members = List<Map<String, dynamic>>.from(json.decode(response.body));
     } else {
@@ -135,12 +144,13 @@ class Classroom {
   }
 
   // Join classroom
-  Future<bool> joinClassroom(int userId) async {
+  Future<bool> joinClassroom(User user) async {
     await fetchMembersOfClassroom();
-    if (!checkUserExist(userId)) {
+    if (!checkUserExist(user.id)) {
       final response = await _service.joinClassroom(_id!);
       if (response.statusCode == 200) {
         size++;
+        sendNotification("${user.username} has joined to classroom. Say Welcome :)");
         return true;
       } else {
         throw Exception('Failed to join classroom. Status: ${response.body}');
@@ -150,27 +160,30 @@ class Classroom {
     }
   }
 
-  Future<bool> leaveClassroom() async{
+  Future<bool> leaveClassroom(User user) async{
     final response = await _service.leaveClassroom(_id!);
     if(response.statusCode == 204){
+      sendNotification("${user.username} left the classroom. BYE BITCH!!!");
       return true;
     }else{
       throw Exception('failed to leave classroom');
     }
   }
 
-  Future<bool> addSet(int setId) async {
-    final response = await _service.addSetToClassroom(_id!, setId);
+  Future<bool> addSet(Set set) async {
+    final response = await _service.addSetToClassroom(_id!, set.id);
     if (response.statusCode == 200) {
+      sendNotification("NEW SET IS ADDED TO THE CLASSROOM. LEARN BIIIITCH!!!");
       return true;
     } else {
       throw Exception('Failed to add set to classroom. Status: ${response.body}');
     }
   }
 
-  Future<bool> removeSet(int setId) async {
-    final response = await _service.removeSetFromClassroom(_id!, setId);
+  Future<bool> removeSet(Set set) async {
+    final response = await _service.removeSetFromClassroom(_id!, set.id);
     if (response.statusCode == 200) {
+      sendNotification("ONE SET IS REMOVED FROM THE CLASSROOM. :(");
       return true;
     } else {
       throw Exception('Failed to remove set from classroom. Status: ${response.body}');
@@ -180,6 +193,7 @@ class Classroom {
   Future<bool> addFolder(int folderId) async {
     final response = await _service.addFolderToClassroom(_id!, folderId);
     if (response.statusCode == 200) {
+      sendNotification("NEW FOLDER CREATED");
       return true;
     } else {
       throw Exception('Failed to add folder to classroom. Status: ${response.body}');
@@ -189,6 +203,7 @@ class Classroom {
   Future<bool> removeFolder(int folderId) async {
     final response = await _service.removeFolderFromClassroom(_id!, folderId);
     if (response.statusCode == 200) {
+      sendNotification("ONE FOLDER REMOVED");
       return true;
     } else {
       throw Exception('Failed to remove folder from classroom. Status: ${response.body}');
@@ -222,5 +237,34 @@ class Classroom {
     } else {
       throw Exception('Failed to list sets and folders in classroom. Status: ${response.body}');
     }
+  }
+
+  Future<bool> fetchNotifications() async{
+    final response = await NotificationService.instance.fetchNotifications(_id!);
+    if(response.statusCode == 200){
+      _notifications.clear();
+      List<dynamic> data  = jsonDecode(response.body);
+
+      for(var notification in data){
+        print(notification);
+        _notifications.add(
+            CNotification(
+                notification['id'],
+                _id!,
+                notification['message'],
+                DateTime.parse(notification['created_at']),
+                notification['username'],
+                notification['classroomname'],
+            )
+        );
+      }
+      return true;
+    }else{
+      throw Exception('Failed to fetch notifications. Status: ${response.statusCode}');
+    }
+  }
+  Future<void> sendNotification(String message) async{
+    CNotification notification = CNotification.create(_id!,message);
+    await notification.add();
   }
 }

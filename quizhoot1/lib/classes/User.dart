@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:quizhoot/services/classroom_service.dart';
+import 'package:quizhoot/services/notification_service.dart';
 import 'package:quizhoot/services/user_service.dart';
 import '../services/auth_services.dart';
 import 'package:http/http.dart' as http;
+import 'CNotification.dart';
 import 'Folder.dart';
 import 'IComponent.dart';
 import 'Set.dart';
@@ -22,6 +24,7 @@ class User with ChangeNotifier {
   final UserService _userService = UserService.instance;
   List<IComponent> _components = [];
   List<Classroom> _classrooms = [];
+  List<CNotification> _notifications = [];
 
   List<Classroom> get classrooms => _classrooms;
 
@@ -81,6 +84,8 @@ class User with ChangeNotifier {
     notifyListeners();
     update({'phone_number': _phoneNumber});
   }
+
+  List<CNotification> get notifications => _notifications;
 
   AuthService get authService => _authService;
 
@@ -143,13 +148,22 @@ class User with ChangeNotifier {
     if (response.statusCode == 200) {
       return true;
     } else {
-      throw Exception('Failed to set mindfulness: ${response.statusCode}');
+      throw Exception('Failed to update: ${response.statusCode}');
+    }
+  }
+
+  Future<bool> delete() async {
+    final response = await _userService.deleteUser();
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      throw Exception('Failed to delete user: ${response.statusCode}');
     }
   }
 
   Future<void> fetchClassrooms() async {
     final response = await ClassroomService.instance.fetchUsersClassrooms();
-
+    _classrooms.clear();
     if (response.statusCode == 200) {
 
       try {
@@ -174,16 +188,56 @@ class User with ChangeNotifier {
   }
 
   Future<void> fetchSets() async{
+
     List<Map<String, dynamic>> fetchedSets = await Set.fetchSets();
+    _components.clear();
     fetchedSets.forEach((set){
       addComponent(Set(set["id"],set["set_name"], set["size"]));
     });
   }
   Future<void> fetchFolders() async{
+
     List<Folder> fetchedFolders = await Folder.fetchFolders();
+    _components.clear();
     fetchedFolders.forEach((folder){
         addComponent(folder);
       }
     );
   }
+
+  Future<void> fetchNotifications() async {
+    final response = await NotificationService.instance
+        .fetchUserNotifications();
+    if (response.statusCode == 200) {
+      _notifications.clear();
+      List<dynamic> data = jsonDecode(response.body);
+
+      for (var notification in data) {
+        print(notification);
+        _notifications.add(
+            CNotification(
+              notification['id'],
+              notification['classroom'],
+              notification['message'],
+              DateTime.parse(notification['created_at']),
+              notification['username'],
+              notification['classroomname'],
+            )
+        );
+      }
+    }else{
+      throw Exception('Failed to fetch notifications. Status: ${response.statusCode}');
+    }
+  }
+
+  Future<bool> deleteNotification(int notificationID) async{
+    final response = await NotificationService.instance.deleteUserNotification(notificationID);
+    if(response.statusCode == 200){
+      return true;
+    }else{
+      throw Exception('Failed to delete notification. Status: ${response.statusCode}');
+    }
+  }
+
+
 }

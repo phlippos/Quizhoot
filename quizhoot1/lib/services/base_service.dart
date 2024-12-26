@@ -11,7 +11,7 @@ abstract class BaseService {
     'user-create': 'users/create/',
     'user-login': 'login/',
     'user-update': 'update/',
-
+    'user-delete': 'delete/',
     // JWT Token routes
     'token-obtain-pair': 'api/token/',
     'token-refresh': 'api/token/refresh/',
@@ -65,6 +65,12 @@ abstract class BaseService {
     'chat-connect': 'ws://your-backend-url/ws/chat',
     'chat-send': 'chat/messages/send',
     'chat-history': 'chat/messages/history',
+
+    'create-notification': 'notifications/create/',
+    'list-notifications': 'notifications/<int:classroom_id>/list/',
+    'delete-notification': 'notifications/<int:pk>/delete/',
+    'list-user-notification': 'notifications/list_user_notification/',
+    'remove-user-from-notification': 'notifications/remove_user_from_notification/<int:notification_id>/',
 
   });
 

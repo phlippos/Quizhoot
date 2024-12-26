@@ -96,6 +96,7 @@ class Folder implements IComponent {
   //    Typically a static method (like Flashcard.fetchSets).
   // ---------------------------------------------------------------------------
   static Future<List<Folder>> fetchFolders() async {
+
     final response = await FolderService.instance.listFolders();
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);

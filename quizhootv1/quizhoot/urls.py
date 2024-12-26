@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet
+from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet,NotificationViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -12,7 +12,7 @@ urlpatterns = [
     path('users/create/', UserViewSet.as_view({"post": "create_user"}), name="user-create"),
     path('login/', UserViewSet.as_view({"post": "user_login"}), name="user-login"),
     path('update/', UserProfileViewSet.as_view({"put": "update_user"}), name="update-user"),
-
+    path('delete/', UserProfileViewSet.as_view({"delete": "delete_user"}), name="delete-user"),
     # JWT Token routes
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -65,6 +65,12 @@ urlpatterns = [
     path('folders/<int:pk>/remove_set/<int:set_id>/', FolderViewSet.as_view({'delete': 'remove_set_from_folder'}), name='remove_set_from_folder'),
     path('folders/<int:pk>/sets/', FolderViewSet.as_view({'get': 'list_sets_in_folder'}), name='list_sets_in_folder'),
     
+    
+    path('notifications/<int:classroom_id>/list/',NotificationViewSet.as_view({'get':'list_notifications_by_classroom'}),name='list_notification'),
+    path('notifications/create/',NotificationViewSet.as_view({'post':'create_notification'}),name='create_notification'),
+    path('notifications/<int:pk>/delete/',NotificationViewSet.as_view({'delete':'delete_notification'}),name='delete_notification'),
+    path('notifications/remove_user_from_notification/<int:notification_id>/',NotificationViewSet.as_view({'delete':'remove_user_from_notification'}),name='remove_user_from_notification'),
+    path('notifications/list_user_notification/',NotificationViewSet.as_view({'get':'list_user_notifications'}),name='list_user_notifications'),
 ]
 
 """

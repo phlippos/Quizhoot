@@ -70,6 +70,7 @@ class Classroom(models.Model):
     creator_id = models.ForeignKey(User,on_delete = models.CASCADE,db_column = "creator_id")
     sets = models.ManyToManyField('Set', blank=True, related_name='classrooms')
     folders = models.ManyToManyField('Folder', blank=True, related_name='classrooms')
+    users = models.ManyToManyField(User, through='classroom_user', related_name='classrooms')
     
 class classroom_user(models.Model):
     classroom_id = models.ForeignKey(Classroom,on_delete = models.CASCADE,db_column = "classroom_id")
@@ -93,4 +94,35 @@ class Folder(models.Model):
     
     def __str__(self):
         return f"{self.name} (Owned by {self.user.username})"
+    
+    
+class Notification(models.Model):
+    TYPES = [
+        ('join_classroom', 'User joined classroom'),
+        ('create_folder', 'Folder created'),
+        ('add_set', 'Set added to folder'),
+        ('custom', 'Custom notification'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_column="user_id")  # The user receiving the notification
+    message = models.TextField(db_column="message")  # The content of the notification
+    notification_type = models.CharField(max_length=50, choices=TYPES, db_column="notification_type")
+    created_at = models.DateTimeField(auto_now_add=True, db_column="created_at")  # Timestamp when the notification was created
+    users = models.ManyToManyField(User, related_name='notifications', blank=True)  # Many-to-many field for users
+    classroom = models.ForeignKey(
+        Classroom, 
+        null=True, 
+        blank=True, 
+        on_delete=models.CASCADE, 
+        db_column="classroom_id", 
+        related_name='notifications'
+    )  # Optional connection to a classroom
+
+    class Meta:
+        db_table = "Notification"
+        ordering = ['-created_at']  # Order notifications by creation date (latest first)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.message[:50]}..."
+
     

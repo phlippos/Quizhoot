@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification
 
 """
     Django'da serialization, Django modellerini (veya queryset'lerini) JSON, XML veya diğer biçimlere dönüştürmeyi sağlar.
@@ -94,3 +94,11 @@ class FolderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Folder
         fields = ['id', 'user_id', 'folder_name', 'sets']
+        
+        
+class NotificationSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username')
+    classroomname = serializers.CharField(source='classroom.classroom_name')
+    class Meta:
+        model = Notification
+        fields = '__all__'

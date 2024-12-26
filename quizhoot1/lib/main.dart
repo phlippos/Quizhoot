@@ -47,8 +47,11 @@ class QuizHoot extends StatelessWidget {
         '/classroomView': (context) => const ClassroomViewPage(),
         '/classroomInside': (context) => const ClassroomInside(),
         '/classroomMembers': (context) => const ClassroomMembers(),
-        '/classroomFolders':(context) => ClassroomFolders(),
-        '/folderInside':(context) => FolderInside(),
+        '/classroomFolders':(context) => const ClassroomFolders(),
+        '/folderInside':(context) => const FolderInside(),
+        '/cards':(context) => const CardsPage(),
+        '/scrambledGame': (context) => const ScrambledGame(),
+        '/classroomFolderInside': (context) => const ClassroomFolderInside(),
       },
     );
   }

@@ -101,9 +101,11 @@ class Set implements IComponent{
 
 
   Future<void> fetchFlashcards() async{
+
     final response = await _set_flashcardService.fetchData(_id);
     if(response.statusCode == 200) {
       List<Map<String, dynamic>> data = List<Map<String,dynamic>>.from(json.decode(response.body));
+      _components.clear();
       data.forEach((flashcard){
         addComponent(Flashcard(flashcard['id'],flashcard['term'],flashcard['definition'],flashcard['fav']));
       });
@@ -146,4 +148,17 @@ class Set implements IComponent{
     _favFlashcardNum = components.whereType<Flashcard>().where((fc) => fc.favStatus).toList().length;
   }
 
+  List<Flashcard> getFlashcards(){
+    return _components.whereType<Flashcard>().toList();
+  }
+
+  List<String> getTerms(){
+    List<String> terms = [];
+    getFlashcards().forEach(
+        (flashcard){
+          terms.add(flashcard.term);
+        }
+    );
+    return terms;
+  }
 }

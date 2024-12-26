@@ -4,19 +4,20 @@ import 'package:quizhoot/services/base_service.dart';
 
 import 'auth_services.dart';
 
-class UserService extends BaseService{
-  static final UserService _instance = UserService._internal();
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
+class UserService extends BaseService {
+  static final UserService _instance = UserService._internal();
 
   UserService._internal();
 
   static UserService get instance => _instance;
 
-  Future<http.Response> update(Map<String,dynamic> credentials) async {
-
+  Future<http.Response> update(Map<String, dynamic> credentials) async {
     try {
-      // Send a POST request with mindfulness data
-      final response = await http.post(
+      // Send a PUT request with updated user data
+      final response = await http.put(
         Uri.parse(getLink('user-update')!),
         headers: {
           'Content-Type': 'application/json',
@@ -27,11 +28,25 @@ class UserService extends BaseService{
       );
 
       return response;
-
     } catch (e) {
-
       throw Exception('An error occurred: $e');
     }
   }
 
+  Future<http.Response> deleteUser() async {
+    try {
+      // Send a DELETE request to delete the user
+      final response = await http.delete(
+        Uri.parse(getLink('user-delete')!),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Token ${await AuthService.instance.getToken()}',
+        },
+      );
+
+      return response;
+    } catch (e) {
+      throw Exception('An error occurred: $e');
+    }
+  }
 }
