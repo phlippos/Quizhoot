@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet,NotificationViewSet
+from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet,NotificationViewSet,MessageViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -64,6 +64,10 @@ urlpatterns = [
     path('folders/<int:pk>/add_set/', FolderViewSet.as_view({'post': 'add_set_to_folder'}), name='add_set_to_folder'),
     path('folders/<int:pk>/remove_set/<int:set_id>/', FolderViewSet.as_view({'delete': 'remove_set_from_folder'}), name='remove_set_from_folder'),
     path('folders/<int:pk>/sets/', FolderViewSet.as_view({'get': 'list_sets_in_folder'}), name='list_sets_in_folder'),
+
+    # Message routes
+    path('messages/list/', MessageViewSet.as_view({'get': 'list_messages'}), name='list_messages'),
+    path('messages/create/', MessageViewSet.as_view({'post': 'create_message'}), name='create_message'),
     
     
     path('notifications/<int:classroom_id>/list/',NotificationViewSet.as_view({'get':'list_notifications_by_classroom'}),name='list_notification'),

@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import connection
 from rest_framework import status
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification
-from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer,NotificationSerializer
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification,Message
+from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer,NotificationSerializer,MessageSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -775,11 +775,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
     def list_notifications_by_classroom(self, request, classroom_id=None):
         try:
             # Fetch classroom
-            classroom = Classroom.objects.get(id=classroom_id)
+            classroom = Classroom.objects.get(id=classroom_id)                
         except Classroom.DoesNotExist:
             return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Get notifications for the specific classroom
+     # Get notifications for the specific classroom
         notifications = Notification.objects.filter(classroom=classroom)
         
         # Serialize the notifications data
@@ -860,3 +859,43 @@ class NotificationViewSet(viewsets.ModelViewSet):
         # Serialize the notifications
         serializer = NotificationSerializer(notifications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class MessageViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing messages within classrooms.
+    """
+    authentication_classes = [TokenAuthentication]
+    #permission_classes = [IsAuthenticated]
+    serializer_class = MessageSerializer
+    queryset = Message.objects.all()  # Add this line to define the default queryset
+
+    @action(detail=False, methods=['get'], url_path='list')
+    def list_messages(self, request):
+        """
+        List all messages for a specific classroom.
+        """
+        classroom_id = request.query_params.get('classroom_id')
+        if not classroom_id:
+            return Response({"error": "classroom_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            classroom = Classroom.objects.get(id=classroom_id)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = Message.objects.filter(classroom=classroom)
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_message(self, request):
+        """
+        Create a new message for a specific classroom.
+        """
+        serializer = MessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
