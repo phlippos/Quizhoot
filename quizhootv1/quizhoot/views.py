@@ -106,7 +106,7 @@ class SetViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     serializer_class = SetSerializer  
-
+    queryset = Set.objects.all() 
     @action(detail=False, methods=['get'], url_path='list')
     def list_sets(self, request):
         print("username ",request.user.username)
@@ -150,6 +150,16 @@ class SetViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], url_path='list-all')
+    def all_sets(self,request):
+        user_id = User.get_user_id(request.user.username)
+        if not user_id:
+            return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        sets = Set.objects.exclude(user_id=user_id)
+        serializer = SetSerializer(sets, many=True)
+        print(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Flashcard ViewSet
 class FlashcardViewSet(viewsets.ModelViewSet):

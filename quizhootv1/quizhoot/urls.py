@@ -22,7 +22,7 @@ urlpatterns = [
     path('sets/add/', SetViewSet.as_view({'post': 'add_set'}), name='add_set'),
     path('sets/delete/<int:pk>/', SetViewSet.as_view({'delete': 'delete_set'}), name='delete_set'),
     path('sets/update/<int:pk>/', SetViewSet.as_view({'put': 'update_set'}), name='update_set'),
-
+    path('sets/list_all/', SetViewSet.as_view({'get': 'all_sets'}), name='all_sets'),
     # Flashcard routes
     path('flashcards/list/', FlashcardViewSet.as_view({'get': 'list_flashcards'}), name='list_flashcards'),
     path('flashcards/add/', FlashcardViewSet.as_view({'post': 'add_flashcard'}), name='add_flashcard'),

@@ -71,6 +71,7 @@ abstract class BaseService {
     'delete-notification': 'notifications/<int:pk>/delete/',
     'list-user-notification': 'notifications/list_user_notification/',
     'remove-user-from-notification': 'notifications/remove_user_from_notification/<int:notification_id>/',
+    'all-sets': 'sets/list_all/',
 
   });
 

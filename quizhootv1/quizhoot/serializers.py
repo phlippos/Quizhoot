@@ -35,7 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id","email","password","username","first_name", "last_name", "phone_number","mindfulness"]
 
 class SetSerializer(serializers.ModelSerializer):
-    createdBy = serializers.SerializerMethodField()
+    createdBy = serializers.SerializerMethodField(source='user_id.username')
 
     class Meta:
         model = Set
