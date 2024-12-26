@@ -36,7 +36,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
       // Load components (sets and folders)
       await _classroom.listSetsAndFolders();
       _components = _classroom.components;
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -124,7 +124,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
           onTap: () {
             Navigator.pushNamed(
               context,
-              '/folderInside',
+              '/classroomFolderInside',
               arguments: folder,
             );
           },

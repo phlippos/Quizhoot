@@ -15,3 +15,6 @@ export 'classroom_inside.dart';
 export 'classroom_members.dart';
 export 'classroom_folders.dart';
 export 'folder_view.dart';
+export 'cards.dart';
+export 'scrambledGame.dart';
+export 'classroom_folder_inside.dart';

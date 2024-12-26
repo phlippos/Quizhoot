@@ -108,7 +108,7 @@ class _SetContentState extends State<SetContent> {
   // Method to handle the join action
   Future<void> _joinClassroom(Classroom classroom) async {
     try {
-      final response = await classroom.joinClassroom(_user.id); // Add the method to join classroom
+      final response = await classroom.joinClassroom(_user); // Add the method to join classroom
       if (response) {
         // Successfully joined, show a success message or update UI
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(

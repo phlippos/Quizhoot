@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:quizhoot/classes/Classroom.dart'; // Assuming the Classroom class is in this file
+import '../classes/CNotification.dart';
 
 // Main widget for Classroom Announcements page
 class ClassroomAnnouncements extends StatefulWidget {
@@ -9,64 +11,66 @@ class ClassroomAnnouncements extends StatefulWidget {
 }
 
 class _ClassroomAnnouncementsState extends State<ClassroomAnnouncements> {
-  // List of sample announcements with user, initials, time, and message
-  final List<Map<String, dynamic>> _announcements = [
-    {
-      'user': 'Teacher',
-      'initials': 'T',
-      'timeAgo': DateTime.now()
-          .subtract(const Duration(minutes: 30)), // 30 minutes ago
-      'announcement': 'Lecture will be in C301.',
-    },
-    {
-      'user': 'me',
-      'initials': 'A',
-      'timeAgo': DateTime.now()
-          .subtract(const Duration(minutes: 40)), // 40 minutes ago
-      'announcement': 'Please submit your assignments by tomorrow.',
-    },
-    {
-      'user': 'Teacher',
-      'initials': 'T',
-      'timeAgo': DateTime.now()
-          .subtract(const Duration(minutes: 50)), // 50 minutes ago
-      'announcement': 'Class will be cancelled next week.',
-    },
-  ];
-
-  // Controller to manage the input field for new announcements
+  late Classroom classroom; // To hold the classroom object
   final TextEditingController _controller = TextEditingController();
 
-  // Method to add a new announcement to the top of the list
-  void _addAnnouncement() {
-    if (_controller.text.isNotEmpty) {
-      setState(() {
-        _announcements.insert(0, {
-          'user': 'me',
-          'initials': 'A', // User initial
-          'timeAgo': DateTime.now(), // Current time of announcement
-          'announcement': _controller.text,
-        });
-        _controller.clear(); // Clear the input field
-      });
-    }
-  }
-
-  // Helper method to calculate and display time passed since announcement
-  String _getTimeAgo(DateTime time) {
-    final duration = DateTime.now().difference(time);
-    if (duration.inMinutes < 1) {
-      return 'just now';
-    } else if (duration.inMinutes == 1) {
-      return '1 minute ago';
-    } else {
-      return '${duration.inMinutes} minutes ago';
-    }
-  }
+  // List of announcements (initially empty until fetched)
+  List<CNotification> _announcements = [];
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // Get classroom object passed through ModalRoute
+    classroom = ModalRoute.of(context)?.settings.arguments as Classroom;
+
+    // Fetch the notifications for this classroom
+    _fetchNotifications();
+  }
+
+  // Method to fetch notifications from classroom
+  Future<void> _fetchNotifications() async {
+    try {
+      // Assuming the classroom object has a fetchNotifications method
+      await classroom.fetchNotifications();
+      setState(() {
+        _announcements = classroom.getCNotifications();
+
+      });
+    } catch (error) {
+      // Handle error fetching notifications
+      print("Error fetching notifications: $error");
+    }
+  }
+
+  // Method to add a new announcement
+  // Method to add a new announcement
+  void _addAnnouncement() async {
+    if (_controller.text.isNotEmpty) {
+      try {
+        // Create the notification object
+        CNotification newNotification = CNotification.create(
+          classroom.id!, // Pass classroom ID
+          _controller.text, // Message from input field
+        );
+
+        // Call the service to add the notification to the database
+        await newNotification.add();
+
+        // If the notification is successfully created, update the UI
+        setState(() {
+          _announcements.add(newNotification);
+        });
+        _controller.clear(); // Clear the input field
+      } catch (e) {
+        // Handle error if notification creation fails
+        print("Failed to add notification: $e");
+      }
+    }
+  }
+  @override
   void dispose() {
-    _controller.dispose(); // Dispose of the controller to free resources
+    _controller.dispose();
     super.dispose();
   }
 
@@ -77,18 +81,16 @@ class _ClassroomAnnouncementsState extends State<ClassroomAnnouncements> {
         title: const Text('Classroom Announcements'),
         backgroundColor: const Color(0xFF3A1078),
       ),
-      backgroundColor: const Color(0xFF3A1078), // Background color of the page
+      backgroundColor: const Color(0xFF3A1078),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Post a New Announcement', // Header text for input section
+              'Post a New Announcement',
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                  fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
             TextField(
@@ -98,7 +100,7 @@ class _ClassroomAnnouncementsState extends State<ClassroomAnnouncements> {
                 hintStyle: TextStyle(color: Colors.white60),
                 border: OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.white24, // Input field background
+                fillColor: Colors.white24,
               ),
               style: const TextStyle(color: Colors.white),
             ),
@@ -107,23 +109,21 @@ class _ClassroomAnnouncementsState extends State<ClassroomAnnouncements> {
               onPressed: _addAnnouncement,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF3A1078), // Button color
+                foregroundColor: const Color(0xFF3A1078),
               ),
               child: const Text('Add Announcement'),
             ),
             const SizedBox(height: 20),
             const Text(
-              'Announcements', // Header text for announcements list
+              'Announcements',
               style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+                  fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 10),
             if (_announcements.isEmpty)
               const Center(
                 child: Text(
-                  'No announcements yet!', // Display if no announcements
+                  'No announcements yet!',
                   style: TextStyle(color: Colors.white60),
                 ),
               )
@@ -137,17 +137,16 @@ class _ClassroomAnnouncementsState extends State<ClassroomAnnouncements> {
                     color: Colors.white,
                     margin: const EdgeInsets.symmetric(vertical: 5),
                     child: ListTile(
-                      leading: CircleAvatar(
+                      leading: const CircleAvatar(
                         backgroundColor: Colors.white,
                         child: Text(
-                          _announcements[index]['initials']!, // User initials
-                          style: const TextStyle(color: Color(0xFF3A1078)),
+                            "M",
+                          style: TextStyle(color: Color(0xFF3A1078)),
                         ),
                       ),
-                      title: Text(_announcements[index]
-                          ['announcement']!), // Announcement text
+                      title: Text(_announcements[index].message),
                       subtitle: Text(
-                        '${_announcements[index]['user']} - ${_getTimeAgo(_announcements[index]['timeAgo'])}', // User and time ago
+                        '${_announcements[index].username} - ${_announcements[index].getTimeDifference()}',
                         style: const TextStyle(color: Colors.black54),
                       ),
                     ),

@@ -124,7 +124,6 @@ class _ClassroomChatState extends State<ClassroomChat> {
                     senderName: _messages[index].senderName,
                     content: editController.text, // Updated content
                     timestamp: _messages[index].timestamp,
-                    attachmentUrl: _messages[index].attachmentUrl,
                   );
                 });
                 Navigator.pop(context);

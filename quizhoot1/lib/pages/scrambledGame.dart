@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../classes/Set.dart';
 
 class ScrambledGame extends StatefulWidget {
   const ScrambledGame({super.key});
@@ -10,7 +11,7 @@ class ScrambledGame extends StatefulWidget {
 }
 
 class _ScrambledGameState extends State<ScrambledGame> {
-  final List<String> words = ['punch', 'apple', 'grape', 'melon', 'banana'];
+  late List<String> words;
   late String selectedWord;
   late List<String> scrambledLetters;
   List<String> userGuess = [];
@@ -19,13 +20,15 @@ class _ScrambledGameState extends State<ScrambledGame> {
   double progress = 0.0;
   Timer? timer;
   bool isGameStopped = false;
-
+  late Set _set;
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+
+    super.didChangeDependencies();
+    _set = ModalRoute.of(context)?.settings.arguments as Set;
+    words =  _set.getTerms();
     _startNewGame();
   }
-
   void _startNewGame() {
     setState(() {
       isGameStopped = false;

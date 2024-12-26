@@ -90,7 +90,7 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
                 leading: const Icon(Icons.exit_to_app, color: Colors.red),
                 title: const Text('Leave Classroom'),
                 onTap: () {
-                  _classroom.leaveClassroom();
+                  _classroom.leaveClassroom(_user);
                   setState(() {
                     _user.classrooms.remove(_classroom);
                   });
@@ -100,30 +100,6 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
                     '/classroomView',
                     arguments: _classroom,
                   );
-                  // to:do
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Leave Classroom clicked')),
-                  );
-                  // Here, you can also add logic to remove the member from the classroom
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.exit_to_app, color: Colors.red),
-                title: const Text('Leave Classroom'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // to:do
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Leave Classroom clicked')),
-                  );
-                  // Here, you can also add logic to remove the member from the classroom
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.exit_to_app, color: Colors.red),
-                title: const Text('Leave Classroom'),
-                onTap: () {
-                  Navigator.pop(context);
                   // to:do
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Leave Classroom clicked')),

@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import connection
 from rest_framework import status
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder
-from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification,Message
+from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer,NotificationSerializer,MessageSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -66,6 +66,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'access_token': token.key,'user':serializer.data},status = 200)
         return Response({'error': 'Invalid credentials'}, status=400)
     
+
     
     
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -84,6 +85,18 @@ class UserProfileViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete_user(self, request):
+        user_id = User.get_user_id(request.user.username)
+        if not user_id:
+            return Response({"error": "user_id cannot be null"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=user_id)
+            user.delete()  # Delete the user
+            return Response({"message": "User deleted successfully"}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
     
         
 class SetViewSet(viewsets.ModelViewSet):
@@ -747,3 +760,142 @@ class FolderViewSet(viewsets.ModelViewSet):
         sets = folder.sets.all()
         serializer = SetSerializer(sets, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for handling CRUD operations for the Notification model.
+    """
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+    queryset = Notification.objects.all()
+    # List notifications for a specific classroom
+    @action(detail=False, methods=['get'], url_path='classroom/<classroom_id>/list')
+    def list_notifications_by_classroom(self, request, classroom_id=None):
+        try:
+            # Fetch classroom
+            classroom = Classroom.objects.get(id=classroom_id)                
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+     # Get notifications for the specific classroom
+        notifications = Notification.objects.filter(classroom=classroom)
+        
+        # Serialize the notifications data
+        serializer = NotificationSerializer(notifications, many=True)
+        
+        # Return the serialized data with the message, username, and created_at
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # Create a new notification
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_notification(self, request):
+        # Ensure required fields are provided
+        user_id = User.get_user_id(request.user.username)
+        classroom_id = request.data.get('classroom_id')
+        message = request.data.get('message')
+        notification_type = 'Custom notification'
+        print(classroom_id,message,notification_type)
+        if not classroom_id or not message or not notification_type:
+            return Response({"error": "classroom_id, message, and notification_type are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id = user_id)
+            classroom = Classroom.objects.get(id=classroom_id)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create the notification
+        notification = Notification.objects.create(
+            user=user,
+            classroom=classroom,
+            message=message,
+            notification_type=notification_type,
+        )
+        
+        classroom_users = classroom.users.exclude(id=user_id)
+        notification.users.set(classroom_users)
+        serializer = NotificationSerializer(notification)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # Custom delete for a notification
+    @action(detail=True, methods=['delete'], url_path='delete')
+    def delete_notification(self, request, pk=None):
+        try:
+            notification = Notification.objects.get(pk=pk)
+            notification.delete()
+            return Response({"message": "Notification deleted successfully"}, status=status.HTTP_200_OK)
+        except Notification.DoesNotExist:
+            return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(detail=False, methods=['delete'], url_path='remove_user')
+    def remove_user_from_notification(self, request, notification_id=None ):
+        user_id = User.get_user_id(request.user.username)
+
+        if not notification_id or not user_id:
+            return Response({"error": "notification_id and user_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            notification = Notification.objects.get(id=notification_id)
+            user = User.objects.get(id=user_id)
+        except Notification.DoesNotExist:
+            return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Remove the user from the notification's users
+        notification.users.remove(user)
+
+        return Response({"success": "User removed from notification"}, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['get'], url_path='user_notifications')
+    def list_user_notifications(self, request):
+        # Get the authenticated user
+        user = User.objects.get(username=request.user.username)
+        print(user.username)
+        # Fetch notifications where the user is in the many-to-many field 'users'
+        notifications = Notification.objects.filter(users=user)
+        print(notifications)
+        # Serialize the notifications
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class MessageViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing messages within classrooms.
+    """
+    authentication_classes = [TokenAuthentication]
+    #permission_classes = [IsAuthenticated]
+    serializer_class = MessageSerializer
+    queryset = Message.objects.all()  # Add this line to define the default queryset
+
+    @action(detail=False, methods=['get'], url_path='list')
+    def list_messages(self, request):
+        """
+        List all messages for a specific classroom.
+        """
+        classroom_id = request.query_params.get('classroom_id')
+        if not classroom_id:
+            return Response({"error": "classroom_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            classroom = Classroom.objects.get(id=classroom_id)
+        except Classroom.DoesNotExist:
+            return Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        messages = Message.objects.filter(classroom=classroom)
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_message(self, request):
+        """
+        Create a new message for a specific classroom.
+        """
+        serializer = MessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

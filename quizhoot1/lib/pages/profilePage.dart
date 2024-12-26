@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:quizhoot/classes/User.dart';
 import 'package:quizhoot/pages/custom_bottom_nav.dart';
+import '../services/auth_services.dart';
 import 'settings.dart'; // New settings page added
 
 class ProfilePage extends StatefulWidget {
@@ -10,9 +13,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  bool _notificationsEnabled = true; // Initial state for notifications
-  bool _soundEnabled = true; // Initial state for sound
-  double _soundLevel = 0.5; // Sound level (between 0.0 and 1.0)
+  late User _user;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _user = Provider.of<User>(context, listen: false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +42,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         'assets/images/Frame 18.png'), // Profile image URL
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'abdullahbaba@gmail.com', // Email text
+                  Text(
+                    _user.email, // Email text
                     style: TextStyle(fontSize: 20, color: Colors.white),
                   ),
                   const SizedBox(height: 32),
@@ -71,100 +78,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  // Notifications button with toggle switch
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          // Notification settings action can be added here
-                        },
-                        child: Container(
-                          width: MediaQuery.of(context).size.width * 0.65,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black26,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Notifications',
-                              style: TextStyle(fontSize: 18),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Switch(
-                        value:
-                            _notificationsEnabled, // Toggle notification state
-                        onChanged: (value) {
-                          setState(() {
-                            _notificationsEnabled = value; // Update state
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Sound settings toggle
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Sound',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      Switch(
-                        value: _soundEnabled, // Sound toggle state
-                        onChanged: (value) {
-                          setState(() {
-                            _soundEnabled = value; // Update sound state
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Sound volume slider
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Volume',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      Expanded(
-                        child: Slider(
-                          value: _soundLevel,
-                          min: 0.0,
-                          max: 1.0,
-                          onChanged: (value) {
-                            setState(() {
-                              _soundLevel = value; // Update sound level
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                          '${(_soundLevel * 100).round()}%'), // Display current volume level
-                    ],
-                  ),
                 ],
               ),
             ),
             const Spacer(), // Push the logout button to the bottom
             GestureDetector(
-              onTap: () {
-                // Backend team will handle logout functionality
+              onTap: () async {
+                await AuthService.instance.logout(); // Logout user
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/login',
+                      (Route<dynamic> route) => false,
+                ); // Navigate to login page
               },
               child: Container(
                 width: double.infinity,
@@ -192,7 +117,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       bottomNavigationBar:
-          const CustomBottomNav(initialIndex: 3), // Custom bottom navigation
+      const CustomBottomNav(initialIndex: 3), // Custom bottom navigation
     );
   }
 }
