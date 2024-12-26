@@ -53,8 +53,6 @@ class FlashcardService extends BaseService{
         'Authorization' : 'Token ${await AuthService.instance.getToken()}', // Bearer token for authentication
       },
     );
-
     return response;
   }
-
 }

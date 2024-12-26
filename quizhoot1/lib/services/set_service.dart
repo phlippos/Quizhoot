@@ -68,6 +68,14 @@ class SetService extends BaseService{
     return response;
   }
 
-
+  Future<http.Response> fetchAllSets() async{
+    final response = await http.get(
+        Uri.parse(getLink('all-sets')!),
+        headers : {'Content-Type' : 'application/json',
+          'Authorization' : 'Token ${await AuthService.instance.getToken()}'
+        }
+    );
+    return response;
+  }
 
 }

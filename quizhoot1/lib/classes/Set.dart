@@ -11,6 +11,7 @@ class Set implements IComponent{
   late int _id;
   String _name;
   int _size;
+  late String creatorName;
   List<IComponent> _components = [];
   Quiz _quiz = Quiz(0.0,0,0,false);
   late int _favFlashcardNum;
@@ -101,7 +102,6 @@ class Set implements IComponent{
 
 
   Future<void> fetchFlashcards() async{
-
     final response = await _set_flashcardService.fetchData(_id);
     if(response.statusCode == 200) {
       List<Map<String, dynamic>> data = List<Map<String,dynamic>>.from(json.decode(response.body));
@@ -112,6 +112,26 @@ class Set implements IComponent{
       size = components.length;
     }else{
       throw Exception('Failed to load data');
+    }
+  }
+
+  static Future<List<Set>> fetchAllSets() async{
+    List<Set> sets = [];
+    final response = await SetService.instance.fetchAllSets();
+    if(response.statusCode == 200){
+      List<dynamic> data = jsonDecode(response.body);
+      for(var set in data){
+        Set newSet = Set(
+            set['id'],
+            set['name'],
+            set['size']
+        );
+        newSet.creatorName = set['createdBy'];
+        sets.add(newSet);
+      }
+      return sets;
+    }else{
+      throw Exception('Failed to fetch all sets!');
     }
   }
 
