@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'custom_bottom_nav.dart';
-import 'set_inside.dart'; // Add the SetInside file
+import '../classes/Set.dart'; // Import the Set model
 
 class FlashcardsAllPage extends StatelessWidget {
   const FlashcardsAllPage({super.key});
@@ -20,8 +20,40 @@ class FlashcardsAllPage extends StatelessWidget {
   }
 }
 
-class FlashcardsBody extends StatelessWidget {
+class FlashcardsBody extends StatefulWidget {
   const FlashcardsBody({super.key});
+
+  @override
+  _FlashcardsBodyState createState() => _FlashcardsBodyState();
+}
+
+class _FlashcardsBodyState extends State<FlashcardsBody> {
+  bool _isLoading = true;
+  List<Set> _sets = [];
+  List<Set> _filteredSets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchSets();
+  }
+
+  Future<void> _fetchSets() async {
+    final sets = await Set.fetchAllSets();
+    setState(() {
+      _sets = sets;
+      _filteredSets = sets;
+      _isLoading = false;
+    });
+  }
+
+  void _filterSets(String query) {
+    setState(() {
+      _filteredSets = _sets
+          .where((set) => set.name.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +62,11 @@ class FlashcardsBody extends StatelessWidget {
         _buildHeader(context), // AppBar with title and back button
         const SizedBox(height: 10), // Adds space below header
         _buildSearchBar(), // Search bar for filtering flashcards
-        const Expanded(
-            child: SetContent()), // Displays flashcards in a scrollable area
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SetContent(sets: _filteredSets), // Displays flashcards in a scrollable area
+        ),
       ],
     );
   }
@@ -51,8 +86,7 @@ class FlashcardsBody extends StatelessWidget {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 16.0), // Horizontal padding
+      padding: const EdgeInsets.symmetric(horizontal: 16.0), // Horizontal padding
       child: TextField(
         decoration: InputDecoration(
           hintText: 'Search flashcards...', // Placeholder text in search bar
@@ -65,13 +99,16 @@ class FlashcardsBody extends StatelessWidget {
           prefixIcon: const Icon(Icons.search,
               color: Color(0xFF3A1078)), // Search icon inside text field
         ),
+        onChanged: _filterSets, // Calls _filterSets on text change
       ),
     );
   }
 }
 
 class SetContent extends StatelessWidget {
-  const SetContent({super.key});
+  final List<Set> sets; // List of sets to display
+
+  const SetContent({super.key, required this.sets});
 
   @override
   Widget build(BuildContext context) {
@@ -81,75 +118,23 @@ class SetContent extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 32), // Adds space above each set
-          SetCard(
-            setName: 'Set 1',
-            termCount: '5 Terms',
-            createdBy: 'Creator A',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to SetInside view
-              );
-            },
-          ),
-          const SizedBox(height: 16), // Adds space between sets
-          SetCard(
-            setName: 'Set 2',
-            termCount: '8 Terms',
-            createdBy: 'Creator B',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to SetInside view
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          SetCard(
-            setName: 'Set 3',
-            termCount: '12 Terms',
-            createdBy: 'Creator C',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to SetInside view
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          SetCard(
-            setName: 'Set 4',
-            termCount: '99 Terms',
-            createdBy: 'Creator Baba',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to SetInside view
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          SetCard(
-            setName: 'Set 5',
-            termCount: '18 Terms',
-            createdBy: 'Creator Baba',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) =>
-                        const SetInside()), // Navigates to SetInside view
-              );
-            },
-          ),
+          ...sets.map((set) => Column(
+            children: [
+              SetCard(
+                setName: set.name,
+                termCount: '${set.size} Terms',
+                createdBy: set.creatorName,
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/setInside',
+                    arguments: set,
+                  );
+                },
+              ),
+              const SizedBox(height: 16), // Adds space between sets
+            ],
+          )),
         ],
       ),
     );

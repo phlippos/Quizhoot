@@ -158,7 +158,7 @@ class SetViewSet(viewsets.ModelViewSet):
             return Response({"error": "user_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         sets = Set.objects.exclude(user_id=user_id)
         serializer = SetSerializer(sets, many=True)
-        print(serializer)
+        print(sets)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Flashcard ViewSet
