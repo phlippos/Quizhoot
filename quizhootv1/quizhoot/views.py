@@ -909,3 +909,45 @@ class MessageViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['put'], url_path='update')
+    def update_message(self, request, pk=None):
+        """
+        Update an existing message in a classroom.
+        """
+        try:
+            message = Message.objects.get(pk=pk)
+        except Message.DoesNotExist:
+            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        '''
+        # Check if the user is the sender of the message
+        if :
+            return Response({"error": "You can only edit your own messages"}, status=status.HTTP_403_FORBIDDEN)
+        '''
+
+        # Update the message content
+        serializer = MessageSerializer(message, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['delete'], url_path='delete')
+    def delete_message(self, request, pk=None):
+        """
+        Delete a specific message.
+        """
+        print(1)
+        try:
+            message = Message.objects.get(pk=pk)
+        except Message.DoesNotExist:
+            return Response({"error": "Message not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Optional: Check if the user is the sender of the message
+        # if message.sender != request.user:
+        #     return Response({"error": "You can only delete your own messages"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Delete the message
+        message.delete()
+        return Response({"message": "Message deleted successfully."}, status=status.HTTP_200_OK)
+

@@ -110,6 +110,12 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = '__all__'
-        read_only_fields = ['timestamp']
-
+        fields = '__all__'  # Include all model fields
+        read_only_fields = []  # Ensure no fields are read-only
+        extra_kwargs = {
+            'sender_username': {'required': False},  # You can make sender_username non-required if you want
+            'classroom': {'required': True},
+            'sender': {'required': True},
+            'content': {'required': True},
+            'timestamp': {'required': True},
+        }
