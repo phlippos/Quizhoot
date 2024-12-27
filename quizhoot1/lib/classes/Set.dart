@@ -120,13 +120,15 @@ class Set implements IComponent{
     final response = await SetService.instance.fetchAllSets();
     if(response.statusCode == 200){
       List<dynamic> data = jsonDecode(response.body);
+      print(data);
       for(var set in data){
         Set newSet = Set(
             set['id'],
-            set['name'],
+            set['set_name'],
             set['size']
         );
         newSet.creatorName = set['createdBy'];
+
         sets.add(newSet);
       }
       return sets;
