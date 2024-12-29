@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:audioplayers/audioplayers.dart';
 
 class WordlePage extends StatelessWidget {
   const WordlePage({super.key});
@@ -8,7 +11,7 @@ class WordlePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           "WORDLE",
           style: TextStyle(
               color: Color(0xffffffff),
@@ -17,167 +20,153 @@ class WordlePage extends StatelessWidget {
               fontSize: 36),
         ),
         centerTitle: true,
-        backgroundColor: Color(0xff3A1078),
+        backgroundColor: const Color(0xff3A1078),
         elevation: 0,
       ),
-      body: WordleGame(), // WordleGame widget'ını burada çağırıyoruz
-      backgroundColor: const Color(0xFF3A1078), // Arka plan rengi
+      body: const WordleGame(), // Calling the WordleGame widget here
+      backgroundColor: const Color(0xFF3A1078), // Background color
     );
   }
 }
 
 class WordleGame extends StatefulWidget {
+  const WordleGame({super.key});
+
   @override
   _WordleGameState createState() => _WordleGameState();
 }
 
-class _WordleGameState extends State<WordleGame> {
-  final List<String> wordList = [
-    "MOUSE",
-    "APPLE",
-    "PLANT",
-    "GRAPE",
-    "HOUSE",
-    "BRICK",
-    "STORM",
-    "CRISP",
-    "TRAIN",
-    "SHARK",
-    "FIELD",
-    "CHAIR",
-    "TABLE",
-    "RIVER",
-    "STRAW",
-    "PLANE",
-    "OCEAN",
-    "SHEEP",
-    "CRANE",
-    "STONE",
-    "CLOUD",
-    "BRUSH",
-    "FLOOR",
-    "STAGE",
-    "BLANK",
-    "BRAND",
-    "FLASH",
-    "TRACK",
-    "CLOCK",
-    "WATER",
-    "LIGHT",
-    "EARTH",
-    "SNAKE",
-    "GRASS",
-    "PAINT",
-    "SKY",
-    "BEACH",
-    "PIZZA",
-    "BEANS",
-    "SOUND",
-    "TRUCK",
-    "PLUMB",
-    "STORY",
-    "SPACE",
-    "CANDY",
-    "LEMON",
-    "WHALE",
-    "GLOVE",
-    "TOUCH",
-    "TIGER",
-    "PEACH",
-    "THORN",
-    "BREAD",
-    "GLASS",
-    "CHALK",
-    "FLAME",
-    "FRUIT",
-    "SWORD",
-    "COAST",
-    "DRIVE",
-    "HEART",
-    "SLOPE",
-    "BERRY",
-    "GHOST",
-    "FEVER",
-    "SLICE",
-    "CROWN",
-    "VIRUS",
-    "CROSS",
-    "SPOON",
-    "STOVE",
-    "FENCE",
-    "RAISE",
-    "SMILE",
-    "ANGEL",
-    "PLATE",
-    "ROBOT",
-    "PIANO",
-    "CABLE",
-    "SWING",
-    "MOTOR",
-    "MANGO",
-    "ALARM",
-    "GUEST",
-    "JUICE",
-    "LAYER",
-    "ALGAE",
-    "QUICK",
-    "FLOAT",
-    "GRIND",
-    "SPADE",
-    "BRAVE",
-    "STAND"
-  ];
+class _WordleGameState extends State<WordleGame> with TickerProviderStateMixin {
+  late AudioPlayer _audioPlayer; // AudioPlayer instance
+  late String targetWord; // Target word for the game
+  int currentRow = 0; // Current row in the grid
+  int currentCol = 0; // Current column in the grid
+  List<List<String>> guesses =
+      List.generate(6, (_) => List.filled(5, "")); // List of guesses
+  List<Color> keyboardColors = List.filled(26, Colors.grey); // Keyboard colors
+  List<String> wordList = []; // List of valid words
+  bool _isLoading = true; // Loading state
 
-  late String targetWord;
-  int currentRow = 0;
-  int currentCol = 0;
-  List<List<String>> guesses = List.generate(6, (_) => List.filled(5, ""));
-  List<Color> keyboardColors = List.filled(26, Colors.grey);
+  late AnimationController
+      _controller; // Animation controller for grid animation
+  late Animation<Offset> _animation; // Animation for translating cells
 
   @override
   void initState() {
     super.initState();
-    targetWord = wordList[Random().nextInt(wordList.length)].toUpperCase();
+
+    // Initialize AudioPlayer
+    _audioPlayer = AudioPlayer();
+
+    // Initialize animation controller
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 500), vsync: this);
+
+    // Define the animation
+    _animation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0.0, -0.2),
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+
+    // Fetch the words
+    fetchWords();
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  // Function to fetch words from an API
+  Future<void> fetchWords() async {
+    setState(() {
+      _isLoading = true; // Set loading state to true when fetching words
+    });
+
+    final response = await http.get(
+      Uri.parse(
+          'https://random-word-api.herokuapp.com/word?number=8500&length=5'),
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> data = json.decode(response.body);
+      setState(() {
+        wordList = data
+            .where((word) => (word as String).length == 5)
+            .map<String>((word) => word.toUpperCase())
+            .toList();
+
+        if (wordList.isNotEmpty) {
+          targetWord = wordList[Random().nextInt(wordList.length)];
+          print('Target Word: $targetWord');
+        } else {
+          throw Exception('No valid 5-letter words found.');
+        }
+        _isLoading = false; // Set loading state to false when words are loaded
+      });
+    } else {
+      setState(() {
+        _isLoading = false; // If API request fails, stop loading
+      });
+      throw Exception('Failed to load words');
+    }
+  }
+
+  // Function to play sound
+  void playSound(String soundPath) async {
+    await _audioPlayer.setVolume(1.0);
+    await _audioPlayer.play(AssetSource(soundPath)); // Play sound
+  }
+
+  // Function to handle guess submission
   void enterGuess() {
     final guess = guesses[currentRow].join();
     if (guess.length == 5) {
       if (wordList.contains(guess)) {
-        // Check if the guess is a valid word
         updateKeyboardColors(guess);
+
+        // Animation starts
         if (guess == targetWord) {
+          playSound('images/success.mp3');
           showEndGameDialog("Congratulations!",
               "You've guessed the correct word: $targetWord");
         } else if (currentRow == 5) {
-          // If it's the last row and the guess is incorrect
+          playSound('images/failure.mp3');
           showEndGameDialog("Game Over", "The correct word was: $targetWord");
         } else {
+          playSound('images/incorrect.mp3');
           setState(() {
             currentRow++;
             currentCol = 0;
           });
+
+          // Trigger animation
+          _controller.forward(from: 0.0); // Start animation
         }
       } else {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text("Invalid Word"),
-            content: Text("The word you entered is not in the list."),
+            title: const Text("Invalid Word"),
+            content: const Text("The word you entered is not in the list."),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: Text("OK"),
+                child: const Text("OK"),
               ),
             ],
           ),
         );
+        playSound('images/wrong.mp3');
       }
     }
   }
 
+  // Function to delete a letter
   void deleteLetter() {
     if (currentCol > 0) {
       setState(() {
@@ -187,6 +176,7 @@ class _WordleGameState extends State<WordleGame> {
     }
   }
 
+  // Function to update keyboard colors based on the guess
   void updateKeyboardColors(String guess) {
     for (int i = 0; i < guess.length; i++) {
       if (targetWord.contains(guess[i])) {
@@ -204,35 +194,60 @@ class _WordleGameState extends State<WordleGame> {
     }
   }
 
+  // Function to reset the game
   void resetGame() {
     setState(() {
-      targetWord = wordList[Random().nextInt(wordList.length)].toUpperCase();
+      targetWord = wordList[Random().nextInt(wordList.length)];
       currentRow = 0;
       currentCol = 0;
       guesses = List.generate(6, (_) => List.filled(5, ""));
       keyboardColors = List.filled(26, Colors.grey);
+      print('Target Word: $targetWord');
     });
   }
 
+  // Function to show the end game dialog
   void showEndGameDialog(String title, String message) {
+    Color dialogTitleColor =
+        title == "Congratulations!" ? Colors.green : Colors.red;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: dialogTitleColor,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              resetGame();
+              resetGame(); // Reset the game
             },
-            child: Text("Play Again"),
+            child: const Text(
+              "Play Again",
+              style: TextStyle(
+                color: Colors.black,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
+  // Function to build the on-screen keyboard
   Widget buildKeyboard() {
     const rows = [
       'QWERTYUIOP',
@@ -256,9 +271,10 @@ class _WordleGameState extends State<WordleGame> {
                     });
                   }
                 },
-                child: Container(
-                  margin: EdgeInsets.all(2),
-                  padding: EdgeInsets.all(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  margin: const EdgeInsets.all(2),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: keyboardColors[
                         letter.codeUnitAt(0) - 'A'.codeUnitAt(0)],
@@ -266,7 +282,7 @@ class _WordleGameState extends State<WordleGame> {
                   ),
                   child: Text(
                     letter,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -282,13 +298,14 @@ class _WordleGameState extends State<WordleGame> {
             GestureDetector(
               onTap: enterGuess,
               child: Container(
-                margin: EdgeInsets.all(2),
-                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+                margin: const EdgeInsets.all(2),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
                 decoration: BoxDecoration(
                   color: Colors.grey[700],
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
+                child: const Text(
                   "ENTER",
                   style: TextStyle(
                     color: Colors.white,
@@ -298,17 +315,18 @@ class _WordleGameState extends State<WordleGame> {
                 ),
               ),
             ),
-            SizedBox(width: 4),
+            const SizedBox(width: 4),
             GestureDetector(
               onTap: deleteLetter,
               child: Container(
-                margin: EdgeInsets.all(2),
-                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+                margin: const EdgeInsets.all(2),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
                 decoration: BoxDecoration(
                   color: Colors.grey[700],
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.backspace,
                   color: Colors.white,
                   size: 20,
@@ -321,64 +339,132 @@ class _WordleGameState extends State<WordleGame> {
     );
   }
 
+  // Function to build the grid of the game
   Widget buildGrid() {
     return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 5,
         childAspectRatio: 1.2,
       ),
       shrinkWrap: true,
       itemCount: 30,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
         final row = index ~/ 5;
         final col = index % 5;
-        return Container(
-          margin: EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: getColor(row, col),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Center(
-            child: Text(
-              guesses[row][col],
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+
+        return AnimatedBuilder(
+          animation: _controller, // Link the animation controller
+          builder: (context, child) {
+            // Translate the cell based on animation value
+            if (row == currentRow) {
+              return Transform.translate(
+                offset:
+                    _controller.value != 0.0 ? _animation.value : Offset.zero,
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: getColor(row, col),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Center(
+                    child: Text(
+                      guesses[row][col], // Display the letter
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            } else {
+              return Container(
+                margin: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: getColor(row, col),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Center(
+                  child: Text(
+                    guesses[row][col], // Display the letter
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              );
+            }
+          },
         );
       },
     );
   }
 
   Color getColor(int row, int col) {
-    if (row >= currentRow) return Colors.grey[800]!;
-    if (targetWord[col] == guesses[row][col]) return Colors.green;
-    if (targetWord.contains(guesses[row][col])) return Colors.orange;
-    return Colors.grey;
+    if (row >= currentRow) return Colors.grey[800]!; // For unfilled rows
+
+    String guessLetter = guesses[row][col];
+    int correctCount = 0; // Correct (green) count
+    int misplacedCount = 0; // Misplaced (orange) count
+
+    // Hedef kelime harflerinin sayısını tut
+    Map<String, int> targetLetterCount = {};
+    for (var letter in targetWord.split('')) {
+      targetLetterCount[letter] = (targetLetterCount[letter] ?? 0) + 1;
+    }
+
+    // Doğru pozisyondaki harfleri (yeşil) kontrol et
+    for (int i = 0; i < 5; i++) {
+      if (guesses[row][i] == targetWord[i]) {
+        targetLetterCount[guesses[row][i]] =
+            targetLetterCount[guesses[row][i]]! - 1;
+        if (i == col) return Colors.green; // Bu pozisyon zaten yeşil
+      }
+    }
+
+    // Yanlış pozisyondaki harfleri (turuncu) kontrol et
+    for (int i = 0; i < 5; i++) {
+      if (guesses[row][i] != targetWord[i] &&
+          targetWord.contains(guesses[row][i])) {
+        if (targetLetterCount[guesses[row][i]]! > 0) {
+          targetLetterCount[guesses[row][i]] =
+              targetLetterCount[guesses[row][i]]! - 1;
+          if (i == col) return Colors.orange; // Bu pozisyon turuncu
+        }
+      }
+    }
+
+    return Colors.grey; // Hiçbir şartı sağlamıyorsa gri
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 6,
-            child: buildGrid(),
-          ),
-          SizedBox(height: 7),
-          Expanded(
-            flex: 3,
-            child: buildKeyboard(),
-          ),
-        ],
-      ),
-    );
+    return _isLoading
+        ? const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 20),
+                Text("Loading Game...",
+                    style: TextStyle(color: Colors.white, fontSize: 24)),
+              ],
+            ),
+          )
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                buildGrid(),
+                const SizedBox(height: 10),
+                buildKeyboard(),
+              ],
+            ),
+          );
   }
 }
