@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db import connection
 from rest_framework import status
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification,Message
-from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer,NotificationSerializer,MessageSerializer
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification
+from .serializers import UserSerializer,SetSerializer,FlashcardSerializer,Set_FlashcardSerializer,QuizSerializer,Quiz_User_SetSerializer,Classroom_Serializer,Classroom_User_Serializer,FolderSerializer,NotificationSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -397,7 +397,6 @@ class ClassroomUserViewSet(viewsets.ModelViewSet):
         
    
         serializer = Classroom_Serializer(classrooms, many = True)
-        print("classroom_size : ",serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='list')
@@ -413,30 +412,37 @@ class ClassroomUserViewSet(viewsets.ModelViewSet):
         else :
             Response({"error": "Classroom not found"}, status=status.HTTP_404_NOT_FOUND)
             
-    """@staticmethod
-    def update_user_role(self,classroom_id, user_id, new_role):
+    def delete_user_from_classroom(self, request, classroom_id=None):
         try:
-            classroom_user = classroom_user.objects.get(classroom_id=classroom_id, user_id=user_id)
-            classroom_user.user_role = new_role
-            classroom_user.save()
-            return True, "User role updated successfully :)"
-        except classroom_user.DoesNotExist:
-            return False, "Classroom user not found!!!!"
-        except Exception as e:
-            return False, str(e)
-"""
-
-    def delete_user_from_classroom(self,request,classroom_id = None):
-        try:        
             user_id = User.get_user_id(request.user.username)
             print(classroom_id)
             print(user_id)
+            
+            # Check if the user is an admin
             classroom_user_obj = classroom_user.objects.get(classroom_id=classroom_id, user_id=user_id)
+            is_admin = classroom_user_obj.user_role
+
+            # Delete the user from the classroom
             classroom_user_obj.delete()
+
+            # If the user was an admin, handle admin reassignment or classroom deletion
+            if is_admin:
+                remaining_users = classroom_user.objects.filter(classroom_id=classroom_id)
+                if remaining_users.exists():
+                    # Reassign admin to another user
+                    new_admin = remaining_users.first()
+                    new_admin.user_role = True
+                    new_admin.save()
+                else:
+                    # No other users, delete the classroom
+                    Classroom.objects.get(id=classroom_id).delete()
+            
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except classroom_user.DoesNotExist:
+            return Response({"error": "User not found in classroom"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             print(e)
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
         
@@ -650,8 +656,13 @@ class FolderViewSet(viewsets.ModelViewSet):
     # --------------------------------------------------------------------------
     @action(detail=False, methods=['get'], url_path='list')
     def list_folders(self, request):
+        folder_list = []
         folders = self.get_queryset()
-        serializer = self.get_serializer(folders, many=True)
+        for folder in folders:
+            if not Classroom.objects.filter(folders=folder).exists():
+                folder_list.append(folder)
+                 
+        serializer = self.get_serializer(folder_list, many=True)
         print(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -706,7 +717,7 @@ class FolderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='add_set')
     def add_set_to_folder(self, request, pk=None):
         try:
-            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+            folder = Folder.objects.get(pk=pk)
         except Folder.DoesNotExist:
             return Response(
                 {"error": "Folder not found or not yours"},
@@ -870,11 +881,11 @@ class NotificationViewSet(viewsets.ModelViewSet):
         serializer = NotificationSerializer(notifications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-    
+"""
 class MessageViewSet(viewsets.ModelViewSet):
-    """
+   
     ViewSet for managing messages within classrooms.
-    """
+    
     authentication_classes = [TokenAuthentication]
     #permission_classes = [IsAuthenticated]
     serializer_class = MessageSerializer
@@ -882,9 +893,9 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='list')
     def list_messages(self, request):
-        """
+        
         List all messages for a specific classroom.
-        """
+       
         classroom_id = request.query_params.get('classroom_id')
         if not classroom_id:
             return Response({"error": "classroom_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -900,12 +911,13 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='create')
     def create_message(self, request):
-        """
+       
         Create a new message for a specific classroom.
-        """
+        
         serializer = MessageSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+"""
