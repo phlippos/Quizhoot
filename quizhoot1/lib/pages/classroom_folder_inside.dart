@@ -1,31 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../classes/User.dart';
-import 'custom_top_nav.dart';       // Custom top navigation widget
-import 'custom_bottom_nav.dart';   // Custom bottom navigation widget
-import 'set_inside.dart';          // Page showing individual set details
-
-// Suppose you have these in your project:
+import 'custom_bottom_nav.dart';
+import '../classes/Set.dart';
 import 'package:quizhoot/classes/Folder.dart';
 import 'package:quizhoot/classes/Set.dart';
 
-class FolderInside extends StatefulWidget {
-
-  // If you push here using Navigator, pass a Folder object:
-  // Navigator.pushNamed(context, '/folderInside', arguments: myFolder);
-  const FolderInside({super.key});
+class ClassroomFolderInside extends StatefulWidget {
+  const ClassroomFolderInside({super.key});
 
   @override
-  State<FolderInside> createState() => _FolderInsideState();
+  State<ClassroomFolderInside> createState() => _ClassroomFolderInsideState();
 }
 
-class _FolderInsideState extends State<FolderInside> {
+class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
   bool _isLoading = true;
   bool _hasError = false;
   List<Set> _sets = [];
   late Folder _folder;
+
   @override
-  void didChangeDependencies(){
+  void didChangeDependencies() {
     super.didChangeDependencies();
     _fetchFolderSets();
   }
@@ -39,8 +34,6 @@ class _FolderInsideState extends State<FolderInside> {
 
     try {
       _folder = ModalRoute.of(context)?.settings.arguments as Folder;
-      // fetchSetsInFolder() is a method from your Folder class
-      // that calls the server to get sets for a specific folder.
       final folderSets = await _folder.fetchSetsInFolder();
       setState(() {
         _sets = folderSets;
@@ -57,7 +50,7 @@ class _FolderInsideState extends State<FolderInside> {
 
   Future<void> _deleteSet(Set set) async {
     try {
-      await _folder.removeSetFromFolder(set); // Assume delete() is a method in the Set class that deletes the set
+      await _folder.removeSetFromFolder(set);
       setState(() {
         _sets.remove(set);
         _folder.size--;
@@ -69,10 +62,10 @@ class _FolderInsideState extends State<FolderInside> {
       );
     }
   }
-  void _editSet(Set set){
+
+  void _editSet(Set set) {
     Navigator.pushNamed(context, '/flashcardUpdate', arguments: set);
   }
-
 
   void _showAddSetDialog() {
     List<Set> availableSets = [];
@@ -81,7 +74,7 @@ class _FolderInsideState extends State<FolderInside> {
     Future<void> _loadAvailableSets() async {
       final user = Provider.of<User>(context, listen: false);
       try {
-        //await user.fetchSets(); // Fetch the sets from the user object
+        user.fetchSets();
         setState(() {
           availableSets = user.getSets();
           setSelections = List<bool>.filled(availableSets.length, false);
@@ -91,7 +84,6 @@ class _FolderInsideState extends State<FolderInside> {
       }
     }
 
-    // Load the available sets when the dialog is shown
     _loadAvailableSets();
 
     showDialog(
@@ -100,7 +92,7 @@ class _FolderInsideState extends State<FolderInside> {
         return AlertDialog(
           title: const Text('Add Sets'),
           content: availableSets.isEmpty
-              ? const Center(child: CircularProgressIndicator()) // Loading indicator
+              ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -141,39 +133,47 @@ class _FolderInsideState extends State<FolderInside> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-        length: 3,         // Number of tabs
-        initialIndex: 1,   // Sets the initial tab index
-        child: Scaffold(
-        appBar: const CustomTopNav(initialIndex: 1),
-    backgroundColor: const Color(0xFF3A1078),
-    bottomNavigationBar: const CustomBottomNav(initialIndex: 2),
-    body: _isLoading
-    ? const Center(child: CircularProgressIndicator())
-        : _hasError
-    ? const Center(
-    child: Text(
-    'Error loading folder sets.',
-    style: TextStyle(color: Colors.white),
-    ),
-    )
-        : _sets.isEmpty
-    ? const Center(
-    child: Text(
-    'No sets found in this folder.',
-    style: TextStyle(color: Colors.white, fontSize: 16),
-    ),
-    )
-        : SetListView(sets: _sets, onDelete: _deleteSet,onEdit: _editSet),
-    floatingActionButton: FloatingActionButton(
-    onPressed: _showAddSetDialog,
-    backgroundColor: Colors.white,
-    child: const Icon(Icons.add, color: Colors.blue),
-    ),
-    ),
+      length: 3,
+      initialIndex: 1,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF3A1078),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.pop(context); // Pop the current page off the navigation stack
+            },
+          ),
+          title: const Text('Folder Details'),
+        ),
+        backgroundColor: const Color(0xFF3A1078),
+        bottomNavigationBar: const CustomBottomNav(initialIndex: 2),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _hasError
+            ? const Center(
+          child: Text(
+            'Error loading folder sets.',
+            style: TextStyle(color: Colors.white),
+          ),
+        )
+            : _sets.isEmpty
+            ? const Center(
+          child: Text(
+            'No sets found in this folder.',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        )
+            : SetListView(sets: _sets, onDelete: _deleteSet, onEdit: _editSet),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showAddSetDialog,
+          backgroundColor: Colors.white,
+          child: const Icon(Icons.add, color: Colors.blue),
+        ),
+      ),
     );
   }
 }
@@ -183,7 +183,7 @@ class SetListView extends StatelessWidget {
   final Function(Set) onDelete;
   final Function(Set) onEdit;
 
-  const SetListView({super.key, required this.sets, required this.onDelete,required this.onEdit});
+  const SetListView({super.key, required this.sets, required this.onDelete, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +193,7 @@ class SetListView extends StatelessWidget {
       separatorBuilder: (context, _) => const SizedBox(height: 16),
       itemBuilder: (ctx, index) {
         final setData = sets[index];
-        return SetCard(
+        return ClassroomSetListView(
           setName: setData.name,
           termCount: '${setData.size} Terms',
           onTap: () {
@@ -208,14 +208,14 @@ class SetListView extends StatelessWidget {
   }
 }
 
-class SetCard extends StatelessWidget {
+class ClassroomSetListView extends StatelessWidget {
   final String setName;
   final String termCount;
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
 
-  const SetCard({
+  const ClassroomSetListView({
     super.key,
     required this.setName,
     required this.termCount,
@@ -259,14 +259,12 @@ class SetCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                    icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
-                    onPressed: onEdit
-                  //
+                  icon: const Icon(Icons.edit, color: Color(0xFF3A1078)),
+                  onPressed: onEdit,
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Color(0xFF3A1078)),
-                  onPressed:
-                  onDelete,
+                  onPressed: onDelete,
                 ),
               ],
             ),

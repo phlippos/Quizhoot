@@ -11,6 +11,7 @@ class Set implements IComponent{
   late int _id;
   String _name;
   int _size;
+  late String creatorName;
   List<IComponent> _components = [];
   Quiz _quiz = Quiz(0.0,0,0,false);
   late int _favFlashcardNum;
@@ -104,12 +105,35 @@ class Set implements IComponent{
     final response = await _set_flashcardService.fetchData(_id);
     if(response.statusCode == 200) {
       List<Map<String, dynamic>> data = List<Map<String,dynamic>>.from(json.decode(response.body));
+      _components.clear();
       data.forEach((flashcard){
         addComponent(Flashcard(flashcard['id'],flashcard['term'],flashcard['definition'],flashcard['fav']));
       });
       size = components.length;
     }else{
       throw Exception('Failed to load data');
+    }
+  }
+
+  static Future<List<Set>> fetchAllSets() async{
+    List<Set> sets = [];
+    final response = await SetService.instance.fetchAllSets();
+    if(response.statusCode == 200){
+      List<dynamic> data = jsonDecode(response.body);
+      print(data);
+      for(var set in data){
+        Set newSet = Set(
+            set['id'],
+            set['set_name'],
+            set['size']
+        );
+        newSet.creatorName = set['createdBy'];
+
+        sets.add(newSet);
+      }
+      return sets;
+    }else{
+      throw Exception('Failed to fetch all sets!');
     }
   }
 
@@ -146,4 +170,17 @@ class Set implements IComponent{
     _favFlashcardNum = components.whereType<Flashcard>().where((fc) => fc.favStatus).toList().length;
   }
 
+  List<Flashcard> getFlashcards(){
+    return _components.whereType<Flashcard>().toList();
+  }
+
+  List<String> getTerms(){
+    List<String> terms = [];
+    getFlashcards().forEach(
+        (flashcard){
+          terms.add(flashcard.term);
+        }
+    );
+    return terms;
+  }
 }

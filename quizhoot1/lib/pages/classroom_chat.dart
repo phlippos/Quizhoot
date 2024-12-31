@@ -1,286 +1,205 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../classes/Chat_message.dart';
+import '../services/chat_service.dart';
+import '../classes/User.dart';
 
 class ClassroomChat extends StatefulWidget {
-  const ClassroomChat({Key? key}) : super(key: key);
+  final int classroomId;
+
+  const ClassroomChat({
+    super.key,
+    required this.classroomId,
+  });
 
   @override
-  _ClassroomChatState createState() => _ClassroomChatState();
+  State<ClassroomChat> createState() => _ClassroomChatState();
 }
 
 class _ClassroomChatState extends State<ClassroomChat> {
-  final List<Map<String, String>> _messages = [];
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  Map<String, String>? _pinnedMessage;
-  bool isSending = false;
+  final List<ChatMessage> _messages = [];
+  late ChatService _chatService;
+  late User _currentUser;
+  bool _isLoading = true;
 
-  void _sendMessage() {
-    if (_controller.text.isNotEmpty) {
-      setState(() {
-        isSending = true;
-      });
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = Provider.of<User>(context, listen: false);
+    _chatService = ChatService.instance;
 
-      // TODO: Send message to the backend
-      Future.delayed(const Duration(milliseconds: 500), () {
+    _initializeChat();
+    _chatService.messageStream.listen((message) {
+      if (message != null) {
+        _handleNewMessage(message);
+      }
+    });
+  }
+
+  Future<void> _initializeChat() async {
+    try {
+      final token = await _currentUser.authService.getToken();
+      if (token == null) {
+        _showError('Authentication failed');
+        return;
+      }
+
+
+      final messages = await _chatService.fetchMessages(widget.classroomId);
+      if (messages != null) {
         setState(() {
-          _messages.add({
-            "sender": "Me",
-            "text": _controller.text,
-          });
-          _controller.clear();
-          isSending = false;
+          _messages.addAll(messages);
+          _isLoading = false;
         });
+        _scrollToBottom();
+      }
 
-        _scrollController.animateTo(
-          _scrollController.position.minScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
+      await _chatService.connectToWebSocket(widget.classroomId);
+    } catch (e) {
+      _showError('Failed to initialize chat: $e');
+    }
+    _scrollToBottom();
+  }
+
+  void _handleNewMessage(ChatMessage message) {
+    setState(() {
+      _messages.add(message);
+      _scrollToBottom();
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    try {
+      _chatService.sendMessage(text);
+      _messageController.clear();
+    } catch (e) {
+      _showError('Failed to send message: $e');
     }
   }
 
-  void _deleteMessage(int index) {
-    setState(() {
-      // TODO: Notify backend about message deletion
-      _messages.removeAt(index);
-    });
-  }
-
-  void _editMessage(int index) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        TextEditingController editController = TextEditingController(
-          text: _messages[index]["text"],
-        );
-        return AlertDialog(
-          title: const Text("Edit Message"),
-          content: TextField(
-            controller: editController,
-            decoration: const InputDecoration(hintText: "Enter new message"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  // TODO: Update the message on the backend
-                  _messages[index]["text"] = editController.text;
-                });
-                Navigator.pop(context);
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
-  void _pinMessage(int index) {
-    setState(() {
-      // TODO: Notify backend about pinned message
-      _pinnedMessage = _messages[index];
-    });
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
-  void _showMessageOptions(int index) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.push_pin),
-              title: const Text("Pin Message"),
-              onTap: () {
-                Navigator.pop(context);
-                _pinMessage(index);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text("Edit Message"),
-              onTap: () {
-                Navigator.pop(context);
-                _editMessage(index);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text(
-                "Delete Message",
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _deleteMessage(index);
-              },
-            ),
-          ],
-        );
-      },
-    );
+  @override
+  void dispose() {
+    _chatService.closeConnection();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Classroom Chat'),
-        backgroundColor: const Color(0xFF3A1078),
-      ),
       backgroundColor: const Color(0xFF3A1078),
-      body: Column(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
-          if (_pinnedMessage != null)
-            Container(
-              margin: const EdgeInsets.all(8.0),
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF3A1078), width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 5,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "📌 Pinned Message",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color(0xFF3A1078),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.grey),
-                        onPressed: () {
-                          setState(() {
-                            _pinnedMessage = null;
-                            // TODO: Notify backend about unpinning the message
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _pinnedMessage!["text"]!,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              reverse: true,
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(8),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[_messages.length - 1 - index];
-                final isMe = message["sender"] == "Me";
-
-                return GestureDetector(
-                  onLongPress: () =>
-                      _showMessageOptions(_messages.length - 1 - index),
-                  child: Align(
-                    alignment:
-
-                    isMe ? Alignment.centerRight : Alignment.centerLeft,
-
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: isMe
-                            ? Colors.white
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            message["sender"]!,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: isMe
-                                  ? const Color(0xFF3A1078)
-                                  : Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            message["text"]!,
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isMe
-                                  ? const Color(0xFF3A1078)
-                                  : Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                final message = _messages[index];
+                return MessageBubble(
+                  message: message,
+                  isMe: message.username == _currentUser.username,
                 );
               },
             ),
           ),
-          if (isSending)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                "Sending...",
-                style: TextStyle(color: Colors.grey[300], fontSize: 12),
+          _buildMessageInput(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: const InputDecoration(
+                hintText: 'Type a message...',
+                border: InputBorder.none,
               ),
-            ),
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: 'Enter your message...',
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFF3A1078)),
-                  onPressed: _sendMessage,
-                ),
-              ],
+              onSubmitted: (_) async => await _sendMessage(),
             ),
           ),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: _sendMessage,
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  final ChatMessage message;
+  final bool isMe;
+
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blue[100] : Colors.grey[300],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isMe)
+              Text(
+                message.username,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            Text(message.message),
+            Text(
+              '${message.timestamp.hour}:${message.timestamp.minute}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }

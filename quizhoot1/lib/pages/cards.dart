@@ -1,5 +1,9 @@
+import 'dart:core';
+
 import 'package:flutter/material.dart';
 import 'package:flip_card/flip_card.dart';
+import 'package:quizhoot/classes/Flashcard.dart';
+import '../classes/Set.dart';
 
 class CardsPage extends StatefulWidget {
   const CardsPage({super.key});
@@ -9,27 +13,24 @@ class CardsPage extends StatefulWidget {
 }
 
 class _CardsPageState extends State<CardsPage> {
-  final List<Map<String, String>> flashcards = [
-    {'term': 'Apple', 'definition': 'Apfel'},
-    {'term': 'Apricot', 'definition': 'Aprikose'},
-    {'term': 'Cherry', 'definition': 'Kirsche'},
-    {'term': 'Melon', 'definition': 'Melone'},
-    {'term': 'Pear', 'definition': 'Birne'},
-  ];
 
-  List<Map<String, String>> unknownWords = [];
+  List<Flashcard> unknownWords = [];
   int currentIndex = 0; // Tracks the current card index
   int correctCount = 0; // Number of correct answers (swiped right)
   int incorrectCount = 0; // Number of incorrect answers (swiped left)
   Offset _dragOffset = Offset.zero; // Tracks the swipe offset
   double _opacity = 1.0; // Controls the card's opacity
-
+  late List<Flashcard> flashcards;
+  late Set _set;
   @override
-  void initState() {
-    super.initState();
+  @override
+  void didChangeDependencies() {
+
+    super.didChangeDependencies();
+    _set = ModalRoute.of(context)?.settings.arguments as Set;
+    flashcards = _set.getFlashcards();
     unknownWords.addAll(flashcards); // Initially all words are unknown
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,11 +82,11 @@ class _CardsPageState extends State<CardsPage> {
                   child: FlipCard(
                     key: ValueKey(currentIndex), // Reset flip state
                     front: _buildCardFace(
-                      unknownWords[currentIndex]['term']!,
+                      unknownWords[currentIndex].term,
                       _getCardColor(),
                     ),
                     back: _buildCardFace(
-                      unknownWords[currentIndex]['definition']!,
+                      unknownWords[currentIndex].definition,
                       _getCardColor(),
                     ),
                   ),
@@ -127,7 +128,7 @@ class _CardsPageState extends State<CardsPage> {
       _opacity = 1.0;
       incorrectCount++; // Increment incorrect count for swipe left
       // Do not remove the card, just move it to the back
-      Map<String, String> currentCard = unknownWords[currentIndex];
+      Flashcard currentCard = unknownWords[currentIndex];
       unknownWords.add(currentCard); // Add the card back to the list
       unknownWords.removeAt(currentIndex); // Remove it from the current index
 

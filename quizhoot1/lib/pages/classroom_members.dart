@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../classes/Classroom.dart';
+import '../classes/User.dart';
 
 class ClassroomMembers extends StatefulWidget {
   const ClassroomMembers({super.key});
@@ -12,11 +14,13 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
   late Classroom _classroom;
   List<Map<String, dynamic>> _teachers = [];
   List<Map<String, dynamic>> _members = [];
-
+  late User _user;
+  
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _classroom = ModalRoute.of(context)?.settings.arguments as Classroom;
+    _user = Provider.of<User>(context,listen:false);
     _fetchMembers();
   }
 
@@ -49,8 +53,6 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
       );
     }
   }
-
-
   // Function to show a bottom sheet with options to add members, share the link, or leave classroom
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
@@ -88,19 +90,16 @@ class _ClassroomMembersState extends State<ClassroomMembers> {
                 leading: const Icon(Icons.exit_to_app, color: Colors.red),
                 title: const Text('Leave Classroom'),
                 onTap: () {
-                  Navigator.pop(context);
-                  // to:do
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Leave Classroom clicked')),
+                  _classroom.leaveClassroom(_user);
+                  setState(() {
+                    _user.classrooms.remove(_classroom);
+                  });
+
+                  Navigator.pushNamed(
+                    context,
+                    '/classroomView',
+                    arguments: _classroom,
                   );
-                  // Here, you can also add logic to remove the member from the classroom
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.exit_to_app, color: Colors.red),
-                title: const Text('Leave Classroom'),
-                onTap: () {
-                  Navigator.pop(context);
                   // to:do
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Leave Classroom clicked')),

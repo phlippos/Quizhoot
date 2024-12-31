@@ -50,8 +50,8 @@ class _SetContentState extends State<SetContent> {
 
   Future<void> _fetchSets(User user) async {
     try {
-
       await user.fetchSets();
+
       setState(() {
         _isLoading = false; // Update loading state when data is fetched
       });

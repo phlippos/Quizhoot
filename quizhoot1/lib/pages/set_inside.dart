@@ -53,7 +53,7 @@ class _SetInsideState extends State<SetInside> {
   Future<void> fetchFlashcards() async{
     try {
       await _set.fetchFlashcards();
-      flashcards = _set.components.whereType<Flashcard>().toList();
+      flashcards = _set.getFlashcards();
       setState(() {
         _isLoaded = true;
       });
@@ -215,12 +215,14 @@ class _SetInsideState extends State<SetInside> {
               _buildNavigationButton(
                 context: context,
                 label: 'Scrambled Game',
-                targetPage: const ScrambledGame(),
+                targetPage: '/scrambledGame',
+                argument: _set
               ),
               _buildNavigationButton(
                 context: context,
                 label: 'Cards',
-                targetPage: const CardsPage(),
+                targetPage: '/cards',
+                argument: _set
               ),
             ],
           ),
@@ -536,13 +538,16 @@ class _SetInsideState extends State<SetInside> {
   Widget _buildNavigationButton({
     required BuildContext context,
     required String label,
-    required Widget targetPage,
+    required String targetPage,
+    required var argument,
     VoidCallback? onPressed,
   }) {
     return ElevatedButton(
       onPressed: onPressed ?? () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => targetPage),
+        Navigator.pushNamed(
+          context,
+          targetPage,
+          arguments: argument,
         );
       },
       style: ElevatedButton.styleFrom(

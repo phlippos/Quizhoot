@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet
+from .views import UserViewSet,SetViewSet,UserProfileViewSet, FlashcardViewSet, Set_FlashcardViewSet,QuizViewSet,ClassroomViewSet,ClassroomUserViewSet,FolderViewSet,NotificationViewSet,MessageViewSet
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
@@ -12,7 +12,7 @@ urlpatterns = [
     path('users/create/', UserViewSet.as_view({"post": "create_user"}), name="user-create"),
     path('login/', UserViewSet.as_view({"post": "user_login"}), name="user-login"),
     path('update/', UserProfileViewSet.as_view({"put": "update_user"}), name="update-user"),
-
+    path('delete/', UserProfileViewSet.as_view({"delete": "delete_user"}), name="delete-user"),
     # JWT Token routes
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
@@ -22,7 +22,7 @@ urlpatterns = [
     path('sets/add/', SetViewSet.as_view({'post': 'add_set'}), name='add_set'),
     path('sets/delete/<int:pk>/', SetViewSet.as_view({'delete': 'delete_set'}), name='delete_set'),
     path('sets/update/<int:pk>/', SetViewSet.as_view({'put': 'update_set'}), name='update_set'),
-
+    path('sets/list_all/', SetViewSet.as_view({'get': 'all_sets'}), name='all_sets'),
     # Flashcard routes
     path('flashcards/list/', FlashcardViewSet.as_view({'get': 'list_flashcards'}), name='list_flashcards'),
     path('flashcards/add/', FlashcardViewSet.as_view({'post': 'add_flashcard'}), name='add_flashcard'),
@@ -44,12 +44,17 @@ urlpatterns = [
     path('classrooms_user/list/', ClassroomUserViewSet.as_view({'get': 'list_users_classrooms'}), name='list_users_classrooms'),
     path('classrooms_user/members_list/<int:classroom_id>/',ClassroomUserViewSet.as_view({'get':'list_members_of_classrooms'}),name='list_members_of_classrooms'),
     path('classrooms_user/add_user_2_classroom/',ClassroomUserViewSet.as_view({'post':'add_user_2_classroom'}), name='add_user_2_classroom'),
+    path('classrooms_user/remove_user_from_classroom/<int:classroom_id>/',ClassroomUserViewSet.as_view({'delete':'delete_user_from_classroom'}), name='delete_user_from_classroom'),
     
     path('classrooms/list/',ClassroomViewSet.as_view({'get': 'list_classrooms'}),name='list_classrooms'),
     path('classrooms/add/', ClassroomViewSet.as_view({'post': 'add_classroom'}), name='add_classroom'),
     path('classrooms/delete/<int:pk>/', ClassroomViewSet.as_view({'delete': 'delete_classroom'}), name='delete_classroom'),
     path('classrooms/update/<int:pk>/', ClassroomViewSet.as_view({'put': 'update_classroom'}), name='update_classroom'),
-    
+    path('classrooms/<int:pk>/add-set/', ClassroomViewSet.as_view({'post': 'add_set_to_classroom'}), name='add_set_to_classroom'),
+    path('classrooms/<int:pk>/remove-set/', ClassroomViewSet.as_view({'delete': 'remove_set_from_classroom'}), name='remove_set_from_classroom'),
+    path('classrooms/<int:pk>/add-folder/', ClassroomViewSet.as_view({'post': 'add_folder_to_classroom'}), name='add_folder_to_classroom'),
+    path('classrooms/<int:pk>/remove-folder/', ClassroomViewSet.as_view({'delete': 'remove_folder_from_classroom'}), name='remove_folder_from_classroom'),
+    path('classrooms/<int:pk>/list-sets-folders/', ClassroomViewSet.as_view({'get': 'list_sets_and_folders'}), name='list_sets_and_folders'),
     
     # Folder routes
     path('folders/create/', FolderViewSet.as_view({'post': 'create_folder'}), name='create_folder'),
@@ -59,7 +64,19 @@ urlpatterns = [
     path('folders/<int:pk>/add_set/', FolderViewSet.as_view({'post': 'add_set_to_folder'}), name='add_set_to_folder'),
     path('folders/<int:pk>/remove_set/<int:set_id>/', FolderViewSet.as_view({'delete': 'remove_set_from_folder'}), name='remove_set_from_folder'),
     path('folders/<int:pk>/sets/', FolderViewSet.as_view({'get': 'list_sets_in_folder'}), name='list_sets_in_folder'),
+
+    # Message routes
+    path('messages/list/', MessageViewSet.as_view({'get': 'list_messages'}), name='list_messages'),
+    path('messages/create/', MessageViewSet.as_view({'post': 'create_message'}), name='create_message'),
+    path('messages/update/<int:pk>/', MessageViewSet.as_view({'put': 'update_message'}), name='update_message'),
+    path('messages/delete/<int:pk>/', MessageViewSet.as_view({'delete': 'delete_message'}), name='delete_message'),
     
+    # Notification routes
+    path('notifications/<int:classroom_id>/list/',NotificationViewSet.as_view({'get':'list_notifications_by_classroom'}),name='list_notification'),
+    path('notifications/create/',NotificationViewSet.as_view({'post':'create_notification'}),name='create_notification'),
+    path('notifications/<int:pk>/delete/',NotificationViewSet.as_view({'delete':'delete_notification'}),name='delete_notification'),
+    path('notifications/remove_user_from_notification/<int:notification_id>/',NotificationViewSet.as_view({'delete':'remove_user_from_notification'}),name='remove_user_from_notification'),
+    path('notifications/list_user_notification/',NotificationViewSet.as_view({'get':'list_user_notifications'}),name='list_user_notifications'),
 ]
 
 """
