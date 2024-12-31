@@ -2,6 +2,8 @@ import 'dart:collection';
 
 abstract class BaseService {
   final String _baseurl = 'http://10.0.2.2:8000/api/';
+  final String _wsBaseUrl = 'ws://10.0.2.2:8000/ws';
+
   final HashMap<String, String> _links;
 
   BaseService()
@@ -61,10 +63,11 @@ abstract class BaseService {
     'add-set-to-folder': 'folders/<int:pk>/add_set/',
     'remove-set-from-folder': 'folders/<int:pk>/remove_set/<int:set_id>/',
     'list-sets-in-folder': 'folders/<int:pk>/sets/',
-        
-    'chat-connect': 'ws://your-backend-url/ws/chat',
-    'chat-send': 'chat/messages/send',
-    'chat-history': 'chat/messages/history',
+
+    // Chat routes
+    'chat-messages': 'messages/list/',
+    'chat-send': 'messages/send/',
+    'chat-history': 'messages/history/',
 
     'create-notification': 'notifications/create/',
     'list-notifications': 'notifications/<int:classroom_id>/list/',
@@ -74,6 +77,11 @@ abstract class BaseService {
     'all-sets': 'sets/list_all/',
 
   });
+
+  String getWebSocketUrl(int classroomId, String token) {
+    return '$_wsBaseUrl/chat/$classroomId/?token=$token';
+  }
+
 
   String? getLink(String key, [Map<String, String>? params]) {
     String? endpoint = _links[key];

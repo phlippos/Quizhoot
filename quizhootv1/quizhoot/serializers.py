@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification
+from .models import User,Set,Flashcard,Set_Flashcard,Quiz,Quiz_User_Set,Classroom,classroom_user,Folder,Notification,Message
 
 """
     Django'da serialization, Django modellerini (veya queryset'lerini) JSON, XML veya diğer biçimlere dönüştürmeyi sağlar.
@@ -104,13 +104,17 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-"""
+
 class MessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
-
     class Meta:
         model = Message
-        fields = '__all__'
-        read_only_fields = ['timestamp']
-
-"""
+        fields = '__all__'  # Include all model fields
+        read_only_fields = []  # Ensure no fields are read-only
+        extra_kwargs = {
+            'sender_username': {'required': False},  # You can make sender_username non-required if you want
+            'classroom': {'required': True},
+            'sender': {'required': True},
+            'content': {'required': True},
+            'timestamp': {'required': True},
+        }
