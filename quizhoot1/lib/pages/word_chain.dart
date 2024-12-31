@@ -1,48 +1,91 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import this to use TextInputFormatter
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
 
-void main() => runApp(WordChainApp());
+void main() => runApp(const WordChainApp());
 
 class WordChainApp extends StatelessWidget {
+  const WordChainApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: WordChainGame(),
     );
   }
 }
 
 class WordChainGame extends StatefulWidget {
+  const WordChainGame({super.key});
+
   @override
   _WordChainGameState createState() => _WordChainGameState();
 }
 
 class _WordChainGameState extends State<WordChainGame> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
   final List<String> _usedWords = [];
-  String _currentWord = 'PENCIL';
+  String _currentWord = '';
   int _timeLeft = 20;
   int _score = 0;
   int _highestScore = 0;
   Timer? _timer;
   String _warningMessage = '';
-  TextEditingController _controller =
-      TextEditingController(); // Controller for the input field
+  final TextEditingController _controller = TextEditingController();
+  List<String> _wordList = [];
+  bool _isLoading = true;
+  bool _isGameStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    fetchWords();
+  }
+
+  Future<void> fetchWords() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://random-word-api.herokuapp.com/word?number=1000'),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _wordList = data.map<String>((word) => word.toUpperCase()).toList();
+          if (_wordList.isNotEmpty) {
+            _currentWord = _wordList[Random().nextInt(_wordList.length)];
+            _isLoading = false;
+          } else {
+            throw Exception('No valid words found.');
+          }
+        });
+      } else {
+        throw Exception('Failed to load words: ${response.statusCode}');
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      print("Error fetching words: $e");
+    }
   }
 
   void _startTimer() {
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
+    _audioPlayer.play(AssetSource('images/timer.mp3'));
+
     _timer?.cancel();
     _timeLeft = 20;
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_timeLeft > 0) {
           _timeLeft--;
         } else {
+          _audioPlayer.setReleaseMode(ReleaseMode.stop);
           _gameOver();
         }
       });
@@ -50,41 +93,76 @@ class _WordChainGameState extends State<WordChainGame> {
   }
 
   void _gameOver() {
+    _audioPlayer.stop();
+    _audioPlayer.play(AssetSource('images/failure.mp3'));
     _timer?.cancel();
     setState(() {
-      // Update the highest score before resetting the current score
       _highestScore = _score > _highestScore ? _score : _highestScore;
     });
   }
 
-  void _checkWord() {
-    String inputWord = _controller.text; // Get the text from the controller
-    if (inputWord.isEmpty) return;
+  Future<void> _checkWord() async {
+  String inputWord = _controller.text;
+  if (inputWord.isEmpty) return;
 
-    if (inputWord[0].toLowerCase() !=
-            _currentWord[_currentWord.length - 1].toLowerCase() ||
-        _usedWords.contains(inputWord.toLowerCase())) {
-      // Invalid word logic: Show warning, no extra time added
+  await _audioPlayer.stop();
+
+  if (inputWord[0].toLowerCase() != _currentWord[_currentWord.length - 1].toLowerCase() ||
+      _usedWords.contains(inputWord.toLowerCase())) {
+    setState(() {
+      _warningMessage = 'Invalid word! Try again.';
+    });
+
+    await _audioPlayer.play(AssetSource('images/error.mp3'));
+    await Future.delayed(const Duration(seconds: 1)); 
+  } else {
+    bool isWordInDictionary = await _isWordInDictionary(inputWord);
+    if (!isWordInDictionary) {
       setState(() {
-        _warningMessage = 'Invalid word! Try again.';
+        _warningMessage = 'This word is not in the dictionary. Try another one!';
       });
+
+      await _audioPlayer.play(AssetSource('images/error.mp3'));
+      await Future.delayed(const Duration(seconds: 1)); 
     } else {
-      // Valid word logic
+      await _audioPlayer.play(AssetSource('images/correct.mp3'));
+      await Future.delayed(const Duration(milliseconds: 1000)); 
+
       setState(() {
-        _warningMessage = ''; // Clear warning if word is valid
+        _warningMessage = '';
         _usedWords.add(inputWord.toLowerCase());
         _currentWord = inputWord;
         _score++;
-        _timeLeft += 5; // Add 5 seconds for a valid word
-        _controller.clear(); // Clear the input field after a valid word
+        _timeLeft += 5;
+        _controller.clear();
       });
+    }
+  }
+
+  await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+  await _audioPlayer.play(AssetSource('images/timer.mp3'));
+}
+
+
+
+  Future<bool> _isWordInDictionary(String word) async {
+    final response = await http.get(
+      Uri.parse('https://api.dictionaryapi.dev/api/v2/entries/en/$word'),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data.isNotEmpty;
+    } else {
+      return false;
     }
   }
 
   @override
   void dispose() {
+    _audioPlayer.stop();
     _timer?.cancel();
-    _controller.dispose(); // Dispose the controller
+    _controller.dispose();
     super.dispose();
   }
 
@@ -93,7 +171,7 @@ class _WordChainGameState extends State<WordChainGame> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF3A1078),
-        title: Text(
+        title: const Text(
           'Word Chain',
           style: TextStyle(
               color: Color(0xffffffff),
@@ -105,22 +183,124 @@ class _WordChainGameState extends State<WordChainGame> {
       ),
       backgroundColor: const Color(0xFF3A1078),
       body: Center(
-        child: _timeLeft > 0 ? _buildGameScreen() : _buildGameOverScreen(),
+        child: _isLoading
+            ? _buildLoadingScreen()
+            : !_isGameStarted
+                ? _buildStartScreen()
+                : (_timeLeft > 0
+                    ? _buildGameScreen()
+                    : _buildGameOverScreen()),
       ),
     );
   }
+
+  Widget _buildLoadingScreen() {
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CircularProgressIndicator(
+          color: Colors.yellow,
+        ),
+        SizedBox(height: 20),
+        Text(
+          'Loading words...',
+          style: TextStyle(color: Colors.white, fontSize: 20),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStartScreen() {
+  return Stack(
+    children: [
+      Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Welcome to Word Chain!',
+                style: TextStyle(
+                    color: Colors.yellow,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: "Poppins")),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _isGameStarted = true;
+                  _startTimer();
+                });
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow),
+              child: const Text('Play',
+                  style: TextStyle(color: Color(0xFF3A1078), fontSize: 20, fontFamily: "Poppins")),
+            ),
+          ],
+        ),
+      ),
+      Align(
+        alignment: Alignment.topRight,
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: GestureDetector(
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    backgroundColor: Color(0xFF3A1078), // Arka plan rengi
+                    content: Text(
+                      "Challenge your vocabulary! Enter a word that starts with the last letter of the previous word. Be quick—the clock is ticking!",
+                      style: const TextStyle(
+                        color: Colors.yellow, // Yazı rengi
+                        fontSize: 16,
+                        fontFamily: "Poppins-SemiBold",
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text(
+                          "Close",
+                          style: TextStyle(color: Colors.yellow),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.yellow,
+                  size: 30,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+
 
   Widget _buildGameScreen() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Display the image here
         Image.asset(
-          'assets/images/chain.png', // This is the path to your image in the assets folder
-          height: 150, // Set the height or width as per your requirement
+          'assets/images/chain.png',
+          height: 150,
         ),
-        SizedBox(height: 20),
-        Text('Word Chain',
+        const SizedBox(height: 20),
+        const Text('WORD CHAIN',
             style: TextStyle(
                 color: Colors.yellow,
                 fontSize: 36,
@@ -128,62 +308,58 @@ class _WordChainGameState extends State<WordChainGame> {
                 fontFamily: "Poppins",
                 decoration: TextDecoration.underline,
                 decorationColor: Color.fromARGB(255, 255, 235, 59))),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         Text(
             'Next word must start with letter "${_currentWord[_currentWord.length - 1].toUpperCase()}"',
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.yellow,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 fontFamily: "Poppins")),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Text(_currentWord.toUpperCase(),
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.yellow,
                 fontSize: 40,
                 fontWeight: FontWeight.bold,
                 fontFamily: "Poppins")),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         Text('Time Left: $_timeLeft seconds',
-            style: TextStyle(color: Colors.yellow, fontFamily: "Poppins")),
-        SizedBox(height: 12),
+            style:
+                const TextStyle(color: Colors.yellow, fontFamily: "Poppins")),
+        const SizedBox(height: 12),
         if (_warningMessage.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Text(_warningMessage,
-                style: TextStyle(color: Colors.red, fontSize: 16)),
+                style: const TextStyle(color: Colors.red, fontSize: 16)),
           ),
-        SizedBox(height: 10),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: TextField(
-            controller: _controller, // Use the controller to manage input
+            controller: _controller,
             onChanged: (value) {
               setState(() {
-                // Automatically updates the text in the controller
-                _controller.text = value.toUpperCase(); // Force uppercase input
+                _controller.text = value.toUpperCase();
                 _controller.selection = TextSelection.fromPosition(TextPosition(
-                    offset:
-                        _controller.text.length)); // Keep the cursor at the end
+                    offset: _controller.text.length));
               });
             },
-            inputFormatters: [
-              // Custom input formatter to convert text to uppercase
-              UpperCaseTextInputFormatter(),
-            ],
-            decoration: InputDecoration(
+            inputFormatters: [UpperCaseTextInputFormatter()],
+            decoration: const InputDecoration(
               hintText: 'Type here...',
               filled: true,
               fillColor: Colors.white,
             ),
           ),
         ),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         ElevatedButton(
           onPressed: _checkWord,
           style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow),
           child:
-              Text('Submit', style: TextStyle(color: const Color(0xFF3A1078))),
+              const Text('Submit', style: TextStyle(color: Color(0xFF3A1078))),
         ),
       ],
     );
@@ -193,49 +369,51 @@ class _WordChainGameState extends State<WordChainGame> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('Game Over',
+        const Text('Game Over',
             style: TextStyle(
                 color: Colors.yellow,
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
                 fontFamily: "Poppins")),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         Text('Your Score: $_score',
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.yellow, fontSize: 20, fontFamily: "Poppins")),
         Text('Highest Score: $_highestScore',
-            style: TextStyle(
+            style: const TextStyle(
                 color: Colors.yellow, fontSize: 20, fontFamily: "Poppins")),
-        SizedBox(height: 20),
+        const SizedBox(height: 20),
         ElevatedButton(
           onPressed: () {
             setState(() {
               _usedWords.clear();
               _score = 0;
-              _currentWord = 'PENCIL';
+              _currentWord = _wordList.isNotEmpty
+                  ? _wordList[Random().nextInt(_wordList.length)]
+                  : 'PENCIL';
               _warningMessage = '';
               _startTimer();
-              _controller.clear(); // Clear the input field on game restart
+              _controller.clear();
             });
           },
           style: ElevatedButton.styleFrom(backgroundColor: Colors.yellow),
-          child: Text('Play Again',
-              style: TextStyle(color: const Color(0xFF3A1078))),
+          child: const Text('Play Again',
+              style: TextStyle(color: Color(0xFF3A1078))),
         ),
       ],
     );
   }
 }
 
-// Custom InputFormatter to force uppercase input
 class UpperCaseTextInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    // Converts the input text to uppercase
     return newValue.copyWith(
       text: newValue.text.toUpperCase(),
       selection: TextSelection.collapsed(offset: newValue.selection.baseOffset),
     );
   }
 }
+
+
