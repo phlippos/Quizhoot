@@ -1,13 +1,16 @@
-import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:quizhoot/services/chat_service.dart';
+import 'package:provider/provider.dart';
 import '../classes/Chat_message.dart';
+import '../services/chat_service.dart';
+import '../classes/User.dart';
 
 class ClassroomChat extends StatefulWidget {
   final int classroomId;
 
-  const ClassroomChat({Key? key, required this.classroomId}) : super(key: key);
+  const ClassroomChat({
+    super.key,
+    required this.classroomId,
+  });
 
   @override
   State<ClassroomChat> createState() => _ClassroomChatState();
@@ -16,47 +19,64 @@ class ClassroomChat extends StatefulWidget {
 class _ClassroomChatState extends State<ClassroomChat> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  List<ChatMessage> _messages = [];
-  late final ChatService _chatService;
-  late final StreamSubscription _messageSubscription;
+  final List<ChatMessage> _messages = [];
+  late ChatService _chatService;
+  late User _currentUser;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _currentUser = Provider.of<User>(context, listen: false);
     _chatService = ChatService.instance;
+
     _initializeChat();
+    _chatService.messageStream.listen((message) {
+      if (message != null) {
+        _handleNewMessage(message);
+      }
+    });
   }
 
   Future<void> _initializeChat() async {
     try {
-      // Connect to WebSocket
-      _chatService.connectToChat(widget.classroomId);
+      final token = await _currentUser.authService.getToken();
+      if (token == null) {
+        _showError('Authentication failed');
+        return;
+      }
 
-      // Fetch message history
-      final messages = await _chatService.fetchChatHistory(widget.classroomId);
-      setState(() {
-        _messages = messages;
-      });
 
-      // Listen for new messages
-      _messageSubscription = _chatService.messageStream.listen((event) {
-        final message = ChatMessage.fromJson(jsonDecode(event));
+      final messages = await _chatService.fetchMessages(widget.classroomId);
+      if (messages != null) {
         setState(() {
-          _messages.add(message);
+          _messages.addAll(messages);
+          _isLoading = false;
         });
         _scrollToBottom();
-      });
+      }
+
+      await _chatService.connectToWebSocket(widget.classroomId);
     } catch (e) {
       _showError('Failed to initialize chat: $e');
     }
+    _scrollToBottom();
+  }
+
+  void _handleNewMessage(ChatMessage message) {
+    setState(() {
+      _messages.add(message);
+      _scrollToBottom();
+    });
+    _scrollToBottom();
   }
 
   Future<void> _sendMessage() async {
-    final content = _messageController.text.trim();
-    if (content.isEmpty) return;
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
     try {
-      _chatService.sendMessage(content);
+      _chatService.sendMessage(text);
       _messageController.clear();
     } catch (e) {
       _showError('Failed to send message: $e');
@@ -64,7 +84,9 @@ class _ClassroomChatState extends State<ClassroomChat> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   void _scrollToBottom() {
@@ -79,8 +101,7 @@ class _ClassroomChatState extends State<ClassroomChat> {
 
   @override
   void dispose() {
-    _messageSubscription.cancel();
-    _chatService.disconnect();
+    _chatService.closeConnection();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -89,19 +110,21 @@ class _ClassroomChatState extends State<ClassroomChat> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Classroom Chat')),
-      body: Column(
+      backgroundColor: const Color(0xFF3A1078),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
+              padding: const EdgeInsets.all(8),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return ListTile(
-                  title: Text(message.senderName),
-                  subtitle: Text(message.content),
-                  trailing: Text('${message.timestamp.hour}:${message.timestamp.minute}'),
+                return MessageBubble(
+                  message: message,
+                  isMe: message.username == _currentUser.username,
                 );
               },
             ),
@@ -113,14 +136,19 @@ class _ClassroomChatState extends State<ClassroomChat> {
   }
 
   Widget _buildMessageInput() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
+    return Container(
+      padding: const EdgeInsets.all(8),
+      color: Colors.white,
       child: Row(
         children: [
           Expanded(
             child: TextField(
               controller: _messageController,
-              decoration: const InputDecoration(hintText: 'Type a message...'),
+              decoration: const InputDecoration(
+                hintText: 'Type a message...',
+                border: InputBorder.none,
+              ),
+              onSubmitted: (_) async => await _sendMessage(),
             ),
           ),
           IconButton(
@@ -128,6 +156,50 @@ class _ClassroomChatState extends State<ClassroomChat> {
             onPressed: _sendMessage,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class MessageBubble extends StatelessWidget {
+  final ChatMessage message;
+  final bool isMe;
+
+  const MessageBubble({
+    super.key,
+    required this.message,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isMe ? Colors.blue[100] : Colors.grey[300],
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isMe)
+              Text(
+                message.username,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            Text(message.message),
+            Text(
+              '${message.timestamp.hour}:${message.timestamp.minute}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -14,10 +14,8 @@ from quizhoot import routing
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
     "websocket": AuthMiddlewareStack(
-        AuthMiddlewareStack(
-            URLRouter(
-                routing.websocket_urlpatterns
-            )
+        URLRouter(
+            routing.websocket_urlpatterns
         )
     ),
 })
