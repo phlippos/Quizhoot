@@ -70,7 +70,7 @@ urlpatterns = [
     path('messages/create/', MessageViewSet.as_view({'post': 'create_message'}), name='create_message'),
     path('messages/update/<int:pk>/', MessageViewSet.as_view({'put': 'update_message'}), name='update_message'),
     path('messages/delete/<int:pk>/', MessageViewSet.as_view({'delete': 'delete_message'}), name='delete_message'),
-
+    
     # Notification routes
     path('notifications/<int:classroom_id>/list/',NotificationViewSet.as_view({'get':'list_notifications_by_classroom'}),name='list_notification'),
     path('notifications/create/',NotificationViewSet.as_view({'post':'create_notification'}),name='create_notification'),

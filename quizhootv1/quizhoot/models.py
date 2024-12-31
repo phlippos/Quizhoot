@@ -78,7 +78,7 @@ class classroom_user(models.Model):
     user_role = models.BooleanField(null=False,db_column="user_role",default = False )
 
 
-class Message(models.Model):
+"""class Message(models.Model):
     classroom = models.ForeignKey(Classroom, on_delete=models.CASCADE, db_column="classroom_id", related_name="messages")
     sender = models.ForeignKey(User, on_delete=models.CASCADE, db_column="sender_id", related_name="sent_messages")
     content = models.TextField(db_column="content")
@@ -91,7 +91,7 @@ class Message(models.Model):
     def __str__(self):
         return f"Message from {self.sender.username} in Classroom {self.classroom.id}"
 
-
+"""
 
 class Folder(models.Model):
     """

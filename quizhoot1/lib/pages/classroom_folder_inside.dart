@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../classes/User.dart';
-import 'custom_top_nav.dart';       // Custom top navigation widget
-import 'custom_bottom_nav.dart';   // Custom bottom navigation widget
-import 'set_inside.dart';          // Page showing individual set details
-
-// Suppose you have these in your project:
+import 'custom_bottom_nav.dart';
+import '../classes/Set.dart';
 import 'package:quizhoot/classes/Folder.dart';
 import 'package:quizhoot/classes/Set.dart';
 
@@ -77,6 +74,7 @@ class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
     Future<void> _loadAvailableSets() async {
       final user = Provider.of<User>(context, listen: false);
       try {
+        user.fetchSets();
         setState(() {
           availableSets = user.getSets();
           setSelections = List<bool>.filled(availableSets.length, false);
