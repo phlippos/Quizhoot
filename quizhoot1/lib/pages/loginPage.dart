@@ -11,25 +11,22 @@ class LoginPage extends StatefulWidget {
   _LoginPageState createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>{
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  void _login() async{
-    if(_usernameController.text.isEmpty ||
-        _passwordController.text.isEmpty){
+  void _login() async {
+    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('All fields are required')),
+        const SnackBar(content: Text('All fields are required')),
       );
       return;
     }
     try {
-      User user = Provider.of<User>(context,listen:false);
+      User user = Provider.of<User>(context, listen: false);
 
-      final responseStatusCode = await user.login(
-          _usernameController.text,
-          _passwordController.text
-      );
+      final responseStatusCode =
+          await user.login(_usernameController.text, _passwordController.text);
 
       if (responseStatusCode == 200) {
         if (user.mindfulness == 0) {
@@ -47,12 +44,12 @@ class _LoginPageState extends State<LoginPage>{
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${responseStatusCode}')),
+          SnackBar(content: Text('Login failed: $responseStatusCode')),
         );
       }
-    }catch(e){
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: ${e}')),
+        SnackBar(content: Text('Login failed: $e')),
       );
     }
   }
@@ -95,7 +92,7 @@ class _LoginPageState extends State<LoginPage>{
                   children: [
                     // Email input field
                     TextField(
-                      controller : _usernameController,
+                      controller: _usernameController,
                       decoration: const InputDecoration(
                         hintText: 'Username',
                         hintStyle: TextStyle(color: Colors.grey),
@@ -113,7 +110,7 @@ class _LoginPageState extends State<LoginPage>{
                     const SizedBox(height: 16),
                     // Password input field
                     TextField(
-                      controller : _passwordController,
+                      controller: _passwordController,
                       obscureText: true, // Hide password text
                       decoration: InputDecoration(
                         hintText: 'Password',
@@ -143,6 +140,10 @@ class _LoginPageState extends State<LoginPage>{
                       child: TextButton(
                         onPressed: () {
                           // Action when forgot password is clicked
+                          Navigator.pushNamed(
+                            context,
+                            '/forgetPassword', // Navigate to SignUpPage
+                          );
                         },
                         child: const Text(
                           'Forgot Password?',
@@ -199,7 +200,6 @@ class _LoginPageState extends State<LoginPage>{
                   ),
                   TextButton(
                     onPressed: () {
-
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) =>
