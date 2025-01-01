@@ -18,3 +18,4 @@ export 'folder_view.dart';
 export 'cards.dart';
 export 'scrambledGame.dart';
 export 'classroom_folder_inside.dart';
+export 'forgetPasswordPage.dart';
