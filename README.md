@@ -36,6 +36,7 @@ Activate the virtual environment:
 ### 3. Install Dependencies
 Install the required Python packages:
 ```bash
+cd Quizhoot
 pip install -r requirements.txt
 ```
 
