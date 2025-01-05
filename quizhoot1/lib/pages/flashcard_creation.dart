@@ -36,6 +36,14 @@ class _CreateFlashcardPageState extends State<CreateFlashcardPage> {
       return;
     }
 
+    bool setExists = _user.components.any((component) =>
+    component is Set && component.name == _setNameController.text
+    );
+    if (setExists) {
+      _showSnackBar('A set with this name already exists. Please choose a different name.');
+      return;
+    }
+
     if (!Flashcard.checkExistanceNullFlashcard(flashcards)) {
       nullTermOrDefinitionIndices = Flashcard.getNullTermOrDefinitionIndices(flashcards);
       _showSnackBar('All cards must have both term and definition.');
