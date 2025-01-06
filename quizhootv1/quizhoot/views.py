@@ -733,7 +733,14 @@ class FolderViewSet(viewsets.ModelViewSet):
         except Set.DoesNotExist:
             return Response({"error": "Set not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Because we use a ManyToMany relation or a many-to-many field:
+        # Check if the set is already added to the folder
+        if folder.sets.filter(id=set_id).exists():
+            return Response(
+                {"error": f"Set {set_id} is already added to folder {pk}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Add the set to the folder
         folder.sets.add(set_obj)
         folder.save()
 
@@ -743,10 +750,10 @@ class FolderViewSet(viewsets.ModelViewSet):
     # 6) REMOVE A SET from this folder
     # DELETE /folders/<pk>/remove_set/<set_id>/
     # ==========================================================================
-    @action(detail=True, methods=['delete'], url_path='remove_set/(?P<set_id>[^/.]+)')
+    @action(detail=True, methods=['delete'], url_path='remove_set/<int:set_id>')
     def remove_set_from_folder(self, request, pk=None, set_id=None):
         try:
-            folder = Folder.objects.get(pk=pk, user_id=request.user.id)
+            folder = Folder.objects.get(pk=pk)
         except Folder.DoesNotExist:
             return Response(
                 {"error": "Folder not found or not yours"},

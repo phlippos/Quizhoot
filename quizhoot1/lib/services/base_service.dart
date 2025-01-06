@@ -1,8 +1,8 @@
 import 'dart:collection';
 
 abstract class BaseService {
-  final String _baseurl = 'http://10.0.2.2:8000/api/';
-  final String _wsBaseUrl = 'ws://10.0.2.2:8000/ws';
+  final String _baseurl = 'http://192.168.1.100:8000/api/';
+  final String _wsBaseUrl = 'ws://192.168.1.100:8000/ws';
 
   final HashMap<String, String> _links;
 

@@ -125,7 +125,7 @@ class _ClassroomFoldersState extends State<ClassroomFolders> {
             Navigator.pushNamed(
               context,
               '/classroomFolderInside',
-              arguments: folder,
+              arguments: {'classroom':_classroom,'folder':folder},
             );
           },
           child: Padding(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:quizhoot/classes/Classroom.dart';
 import '../classes/User.dart';
 import 'custom_bottom_nav.dart';
 import '../classes/Set.dart';
@@ -18,6 +19,7 @@ class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
   bool _hasError = false;
   List<Set> _sets = [];
   late Folder _folder;
+  late Classroom _classroom;
 
   @override
   void didChangeDependencies() {
@@ -33,7 +35,10 @@ class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
     });
 
     try {
-      _folder = ModalRoute.of(context)?.settings.arguments as Folder;
+      final Map<String, dynamic> args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      _folder = args['folder'];
+      _classroom = args['classroom'];
+
       final folderSets = await _folder.fetchSetsInFolder();
       setState(() {
         _sets = folderSets;
@@ -50,7 +55,8 @@ class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
 
   Future<void> _deleteSet(Set set) async {
     try {
-      await _folder.removeSetFromFolder(set);
+      await _classroom.removeSet(set, _folder);
+      //await _folder.removeSetFromFolder(set);
       setState(() {
         _sets.remove(set);
         _folder.size--;
@@ -81,6 +87,9 @@ class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
         });
       } catch (e) {
         print('Error loading sets: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to add set. Set already exist!')),
+        );
       }
     }
 
@@ -119,7 +128,8 @@ class _ClassroomFolderInsideState extends State<ClassroomFolderInside> {
                 Navigator.pop(context);
                 for (int i = 0; i < setSelections.length; i++) {
                   if (setSelections[i]) {
-                    await _folder.addSetToFolder(availableSets[i]);
+                    await _classroom.addSet(availableSets[i], _folder);
+                    //await _folder.addSetToFolder(availableSets[i]);
                     _folder.size++;
                   }
                 }
