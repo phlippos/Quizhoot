@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:quizhoot/classes/CNotification.dart';
 import 'package:quizhoot/services/classroom_service.dart';
+import 'package:quizhoot/services/folder_service.dart';
 
 import '../services/notification_service.dart';
 import 'Folder.dart';
@@ -170,8 +171,8 @@ class Classroom {
     }
   }
 
-  Future<bool> addSet(Set set) async {
-    final response = await _service.addSetToClassroom(_id!, set.id);
+  Future<bool> addSet(Set set,Folder folder) async {
+    final response = await folder.addSetToFolder(set);
     if (response.statusCode == 200) {
       sendNotification("NEW SET IS ADDED TO THE CLASSROOM. LEARN BIIIITCH!!!");
       return true;
@@ -180,8 +181,8 @@ class Classroom {
     }
   }
 
-  Future<bool> removeSet(Set set) async {
-    final response = await _service.removeSetFromClassroom(_id!, set.id);
+  Future<bool> removeSet(Set set,Folder folder) async {
+    final response = await folder.removeSetFromFolder(set);
     if (response.statusCode == 200) {
       sendNotification("ONE SET IS REMOVED FROM THE CLASSROOM. :(");
       return true;
